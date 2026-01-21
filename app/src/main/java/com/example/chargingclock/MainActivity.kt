@@ -7,8 +7,6 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.graphics.Color
-import android.graphics.ColorMatrix
-import android.graphics.ColorMatrixColorFilter
 import android.graphics.Typeface
 import android.hardware.Sensor
 import android.hardware.SensorEvent
@@ -40,10 +38,6 @@ import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.app.ActivityCompat
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import java.io.FileDescriptor
 import java.net.HttpURLConnection
@@ -51,6 +45,7 @@ import java.net.URL
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import kotlinx.coroutines.*
 
 class MainActivity : AppCompatActivity(), SensorEventListener {
 
@@ -81,18 +76,7 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
     private var isRedTintEnabled = false
     private var isAutoLocationEnabled = false
 
-    // Красный фильтр (iOS 17 Standby mode style)
-    private val redColorFilter by lazy {
-        val matrix = ColorMatrix().apply {
-            set(floatArrayOf(
-                1f, 0f, 0f, 0f, 0f,
-                0f, 0f, 0f, 0f, 0f,
-                0f, 0f, 0f, 0f, 0f,
-                0f, 0f, 0f, 1f, 0f
-            ))
-        }
-        ColorMatrixColorFilter(matrix)
-    }
+    private var isNightModeActive = false
 
     private val handler = Handler(Looper.getMainLooper())
     private val weatherUpdateRunnable = object : Runnable {
@@ -113,7 +97,11 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
             when (intent?.action) {
                 Intent.ACTION_POWER_CONNECTED -> {
                     batteryStatusText.text = "Заряжается"
-                    batteryStatusText.setTextColor(Color.GREEN)
+                    if (!isNightModeActive || !isRedTintEnabled) {
+                        batteryStatusText.setTextColor(Color.GREEN)
+                    } else {
+                        batteryStatusText.setTextColor(Color.RED)
+                    }
                 }
                 Intent.ACTION_POWER_DISCONNECTED -> {
                     batteryStatusText.text = "Работа от батареи"
@@ -121,7 +109,7 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
 
                     val prefs = getSharedPreferences("AppConfig", Context.MODE_PRIVATE)
                     if (prefs.getBoolean("BG_MODE_ENABLED", false)) {
-                        finishAffinity() // Закрытие при отключении
+                        finishAffinity()
                     }
                 }
             }
@@ -131,7 +119,6 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Включение экрана при запуске
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
             setShowWhenLocked(true)
             setTurnScreenOn(true)
@@ -213,6 +200,8 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
             return
         }
 
+        isNightModeActive = false
+
         applyAppearance(prefs)
 
         isAutoBrightnessEnabled = prefs.getBoolean("AUTO_BRIGHTNESS", false)
@@ -238,9 +227,7 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         if (isSplitMode) {
             containerSide.visibility = View.VISIBLE
             textDateSmall.visibility = View.GONE
-
             setClockSize(150f)
-
             textDateLarge.visibility = View.GONE
             calendarView.visibility = View.GONE
             weatherLayout.visibility = View.GONE
@@ -256,7 +243,6 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         } else {
             containerSide.visibility = View.GONE
             val showDate = prefs.getBoolean("SHOW_CLOCK_DATE", true)
-
             if (showDate) {
                 textDateSmall.visibility = View.VISIBLE
                 setClockSize(200f)
@@ -274,11 +260,103 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         handler.removeCallbacks(weatherUpdateRunnable)
     }
 
+    override fun onSensorChanged(event: SensorEvent?) {
+        if (isAutoBrightnessEnabled && event?.sensor?.type == Sensor.TYPE_LIGHT) {
+            val lux = event.values[0]
+            val layoutParams = window.attributes
+
+            if (lux < 5f) {
+                // --- ТЕМНО ---
+                // Считываем пользовательскую настройку яркости (1-100)
+                val prefs = getSharedPreferences("AppConfig", Context.MODE_PRIVATE)
+                val nightLevel = prefs.getInt("NIGHT_BRIGHTNESS_LEVEL", 1)
+
+                // Конвертируем в float (0.01 - 1.0)
+                layoutParams.screenBrightness = if (nightLevel < 1) 0.01f else nightLevel / 100f
+
+                if (!isNightModeActive) {
+                    isNightModeActive = true
+                    if (isRedTintEnabled) {
+                        applyRedText()
+                    }
+                }
+            } else {
+                // --- СВЕТЛО ---
+                layoutParams.screenBrightness = WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
+
+                if (isNightModeActive) {
+                    isNightModeActive = false
+                    val prefs = getSharedPreferences("AppConfig", Context.MODE_PRIVATE)
+                    applyAppearance(prefs)
+                }
+            }
+            window.attributes = layoutParams
+        }
+    }
+
+    override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {}
+
+    private fun resetBrightnessAndFilter() {
+        val layoutParams = window.attributes
+        layoutParams.screenBrightness = WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
+        window.attributes = layoutParams
+
+        if (isNightModeActive) {
+            isNightModeActive = false
+            val prefs = getSharedPreferences("AppConfig", Context.MODE_PRIVATE)
+            applyAppearance(prefs)
+        }
+    }
+
+    private fun applyRedText() {
+        val color = Color.RED
+
+        setClockColor(color)
+        textDateSmall.setTextColor(color)
+        textDateLarge.setTextColor(color)
+        tvWeatherTemp.setTextColor(color)
+        tvWeatherCondition.setTextColor(color)
+        batteryStatusText.setTextColor(color)
+    }
+
+    private fun applyAppearance(prefs: android.content.SharedPreferences) {
+        val textColorId = prefs.getInt("TEXT_COLOR_ID", 0)
+        val color = when(textColorId) {
+            1 -> Color.GREEN
+            2 -> Color.CYAN
+            3 -> Color.YELLOW
+            4 -> Color.RED
+            else -> Color.WHITE
+        }
+
+        setClockColor(color)
+        textDateSmall.setTextColor(color)
+        textDateLarge.setTextColor(color)
+        tvWeatherTemp.setTextColor(color)
+        tvWeatherCondition.setTextColor(color)
+
+        val bgImageUri = prefs.getString("BG_IMAGE_URI", null)
+        if (bgImageUri != null) {
+            try {
+                ivBackground.visibility = View.VISIBLE
+                ivBackground.setImageURI(Uri.parse(bgImageUri))
+                val alpha = prefs.getInt("BG_IMAGE_ALPHA", 255)
+                ivBackground.imageAlpha = alpha
+                rootLayout.setBackgroundColor(Color.BLACK)
+            } catch (e: Exception) {
+                ivBackground.visibility = View.GONE
+                applyBackgroundColor(prefs)
+            }
+        } else {
+            ivBackground.visibility = View.GONE
+            applyBackgroundColor(prefs)
+        }
+    }
+
     private fun updateClockTime() {
         val format = if (DateFormat.is24HourFormat(this)) "HH:mm" else "h:mm a"
         val sdf = SimpleDateFormat(format, Locale.getDefault())
         val currentTime = sdf.format(Date())
-
         val currentViewText = (tsClock.currentView as? TextView)?.text?.toString()
         if (currentViewText != currentTime) {
             tsClock.setText(currentTime)
@@ -303,41 +381,6 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         for (i in 0 until tsClock.childCount) {
             val v = tsClock.getChildAt(i) as TextView
             v.typeface = tf
-        }
-    }
-
-    private fun applyAppearance(prefs: android.content.SharedPreferences) {
-        val textColorId = prefs.getInt("TEXT_COLOR_ID", 0)
-        val color = when(textColorId) {
-            1 -> Color.GREEN
-            2 -> Color.CYAN
-            3 -> Color.YELLOW
-            4 -> Color.RED
-            else -> Color.WHITE
-        }
-
-        setClockColor(color)
-        textDateSmall.setTextColor(color)
-        textDateLarge.setTextColor(color)
-        tvWeatherTemp.setTextColor(color)
-        tvWeatherCondition.setTextColor(color)
-
-        val bgImageUri = prefs.getString("BG_IMAGE_URI", null)
-
-        if (bgImageUri != null) {
-            try {
-                ivBackground.visibility = View.VISIBLE
-                ivBackground.setImageURI(Uri.parse(bgImageUri))
-                val alpha = prefs.getInt("BG_IMAGE_ALPHA", 255)
-                ivBackground.imageAlpha = alpha
-                rootLayout.setBackgroundColor(Color.BLACK)
-            } catch (e: Exception) {
-                ivBackground.visibility = View.GONE
-                applyBackgroundColor(prefs)
-            }
-        } else {
-            ivBackground.visibility = View.GONE
-            applyBackgroundColor(prefs)
         }
     }
 
@@ -491,33 +534,6 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         } else {
             weatherUpdateRunnable.run()
         }
-    }
-
-    override fun onSensorChanged(event: SensorEvent?) {
-        if (isAutoBrightnessEnabled && event?.sensor?.type == Sensor.TYPE_LIGHT) {
-            val lux = event.values[0]
-            val layoutParams = window.attributes
-
-            if (lux < 5f) {
-                layoutParams.screenBrightness = 0.01f
-                if (isRedTintEnabled) {
-                    rootLayout.background.colorFilter = redColorFilter
-                }
-            } else {
-                layoutParams.screenBrightness = WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
-                rootLayout.background.clearColorFilter()
-            }
-            window.attributes = layoutParams
-        }
-    }
-
-    override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {}
-
-    private fun resetBrightnessAndFilter() {
-        val layoutParams = window.attributes
-        layoutParams.screenBrightness = WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
-        window.attributes = layoutParams
-        rootLayout.background?.clearColorFilter()
     }
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {

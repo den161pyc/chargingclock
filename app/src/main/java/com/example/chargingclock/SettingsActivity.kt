@@ -28,6 +28,8 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var tvAlphaLabel: TextView
     private lateinit var containerBgColor: LinearLayout
     private lateinit var containerRedTint: LinearLayout
+    private lateinit var containerNightBrightness: LinearLayout // НОВОЕ
+    private lateinit var tvNightBrightnessValue: TextView // НОВОЕ
     private lateinit var switchBgMode: Switch
 
     private val fontPickerLauncher = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
@@ -71,6 +73,11 @@ class SettingsActivity : AppCompatActivity() {
         val switchAutoBrightness = findViewById<Switch>(R.id.switchAutoBrightness)
         containerRedTint = findViewById(R.id.containerRedTint)
         val switchRedTint = findViewById<Switch>(R.id.switchRedTint)
+
+        // НОВЫЕ ПОЛЯ ЯРКОСТИ
+        containerNightBrightness = findViewById(R.id.containerNightBrightness)
+        tvNightBrightnessValue = findViewById(R.id.tvNightBrightnessValue)
+        val seekBarNightBrightness = findViewById<SeekBar>(R.id.seekBarNightBrightness)
 
         val switchAutoLocation = findViewById<Switch>(R.id.switchAutoLocation)
         val switchShowBattery = findViewById<Switch>(R.id.switchShowBattery)
@@ -146,25 +153,44 @@ class SettingsActivity : AppCompatActivity() {
 
         updateBgColorVisibility()
 
-        // === 2. ДРУГИЕ НАСТРОЙКИ ===
+        // === 2. АВТО-ЯРКОСТЬ И СВЯЗАННЫЕ НАСТРОЙКИ ===
 
-        fun updateRedTintVisibility(isAutoBrightnessOn: Boolean) {
-            if (isAutoBrightnessOn) {
+        fun updateAutoBrightnessVisibility(isEnabled: Boolean) {
+            if (isEnabled) {
                 containerRedTint.visibility = View.VISIBLE
+                containerNightBrightness.visibility = View.VISIBLE
             } else {
                 containerRedTint.visibility = View.GONE
+                containerNightBrightness.visibility = View.GONE
             }
         }
 
         val isAutoBrightness = prefs.getBoolean("AUTO_BRIGHTNESS", false)
         switchAutoBrightness.isChecked = isAutoBrightness
-        updateRedTintVisibility(isAutoBrightness)
+        updateAutoBrightnessVisibility(isAutoBrightness)
 
         switchAutoBrightness.setOnCheckedChangeListener { _, isChecked ->
             prefs.edit().putBoolean("AUTO_BRIGHTNESS", isChecked).apply()
-            updateRedTintVisibility(isChecked)
+            updateAutoBrightnessVisibility(isChecked)
         }
 
+        // Настройка уровня ночной яркости
+        val savedNightBrightness = prefs.getInt("NIGHT_BRIGHTNESS_LEVEL", 1)
+        seekBarNightBrightness.progress = savedNightBrightness
+        tvNightBrightnessValue.text = "Яркость в ночном режиме: $savedNightBrightness%"
+
+        seekBarNightBrightness.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
+                var value = progress
+                if (value < 1) value = 1 // Минимум 1%
+                tvNightBrightnessValue.text = "Яркость в ночном режиме: $value%"
+                prefs.edit().putInt("NIGHT_BRIGHTNESS_LEVEL", value).apply()
+            }
+            override fun onStartTrackingTouch(seekBar: SeekBar?) {}
+            override fun onStopTrackingTouch(seekBar: SeekBar?) {}
+        })
+
+        // Настройка красного оттенка
         switchRedTint.isChecked = prefs.getBoolean("RED_TINT_ENABLED", false)
         switchRedTint.setOnCheckedChangeListener { _, isChecked ->
             prefs.edit().putBoolean("RED_TINT_ENABLED", isChecked).apply()
