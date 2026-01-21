@@ -6,6 +6,7 @@ import android.content.SharedPreferences
 import android.net.Uri
 import android.os.Bundle
 import android.provider.OpenableColumns
+import android.provider.Settings
 import android.view.View
 import android.widget.Button
 import android.widget.EditText
@@ -25,9 +26,10 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var prefs: SharedPreferences
     private lateinit var tvFontLabel: TextView
     private lateinit var tvAlphaLabel: TextView
-    private lateinit var containerBgColor: LinearLayout // Ссылка на контейнер цветов
+    private lateinit var containerBgColor: LinearLayout
+    private lateinit var containerRedTint: LinearLayout
+    private lateinit var switchBgMode: Switch
 
-    // Лаунчер для шрифта
     private val fontPickerLauncher = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
         uri?.let {
             val takeFlags: Int = Intent.FLAG_GRANT_READ_URI_PERMISSION
@@ -39,14 +41,13 @@ class SettingsActivity : AppCompatActivity() {
         }
     }
 
-    // Лаунчер для фона (картинки)
     private val imagePickerLauncher = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
         uri?.let {
             val takeFlags: Int = Intent.FLAG_GRANT_READ_URI_PERMISSION
             contentResolver.takePersistableUriPermission(it, takeFlags)
             prefs.edit().putString("BG_IMAGE_URI", it.toString()).apply()
             Toast.makeText(this, "Фон выбран!", Toast.LENGTH_SHORT).show()
-            updateBgColorVisibility() // Скрываем выбор цвета
+            updateBgColorVisibility()
         }
     }
 
@@ -56,10 +57,11 @@ class SettingsActivity : AppCompatActivity() {
 
         prefs = getSharedPreferences("AppConfig", Context.MODE_PRIVATE)
 
-        // UI Элементы
+        // UI
+        switchBgMode = findViewById(R.id.switchBgMode)
         val rgTextColor = findViewById<RadioGroup>(R.id.rgTextColor)
         val rgBgColor = findViewById<RadioGroup>(R.id.rgBgColor)
-        containerBgColor = findViewById(R.id.containerBgColor) // Инициализация
+        containerBgColor = findViewById(R.id.containerBgColor)
 
         val btnSelectBgImage = findViewById<Button>(R.id.btnSelectBgImage)
         val btnResetBgImage = findViewById<Button>(R.id.btnResetBgImage)
@@ -67,8 +69,11 @@ class SettingsActivity : AppCompatActivity() {
         tvAlphaLabel = findViewById(R.id.tvAlphaLabel)
 
         val switchAutoBrightness = findViewById<Switch>(R.id.switchAutoBrightness)
+        containerRedTint = findViewById(R.id.containerRedTint)
+        val switchRedTint = findViewById<Switch>(R.id.switchRedTint)
+
         val switchAutoLocation = findViewById<Switch>(R.id.switchAutoLocation)
-        val switchShowBattery = findViewById<Switch>(R.id.switchShowBattery) // НОВОЕ
+        val switchShowBattery = findViewById<Switch>(R.id.switchShowBattery)
 
         val etApiKey = findViewById<EditText>(R.id.etApiKey)
         val btnSelectFont = findViewById<Button>(R.id.btnSelectFont)
@@ -86,8 +91,26 @@ class SettingsActivity : AppCompatActivity() {
         val rgSideContent = findViewById<RadioGroup>(R.id.rgSideContent)
         val btnBack = findViewById<Button>(R.id.btnBack)
 
-        // === 1. ЦВЕТА И ФОН ===
+        // === 0. ФОНОВЫЙ РЕЖИМ ===
+        switchBgMode.isChecked = prefs.getBoolean("BG_MODE_ENABLED", false)
 
+        switchBgMode.setOnClickListener {
+            val isChecked = switchBgMode.isChecked
+            if (isChecked) {
+                if (!Settings.canDrawOverlays(this)) {
+                    switchBgMode.isChecked = false
+                    Toast.makeText(this, "Нужно разрешение 'Поверх других приложений'", Toast.LENGTH_LONG).show()
+                    val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:$packageName"))
+                    startActivity(intent)
+                } else {
+                    prefs.edit().putBoolean("BG_MODE_ENABLED", true).apply()
+                }
+            } else {
+                prefs.edit().putBoolean("BG_MODE_ENABLED", false).apply()
+            }
+        }
+
+        // === 1. ЦВЕТА И ФОН ===
         val savedTextColor = prefs.getInt("TEXT_COLOR_ID", 0)
         (rgTextColor.getChildAt(savedTextColor) as? RadioButton)?.isChecked = true
         rgTextColor.setOnCheckedChangeListener { _, checkedId ->
@@ -102,13 +125,11 @@ class SettingsActivity : AppCompatActivity() {
             prefs.edit().putInt("BG_COLOR_ID", colorId).apply()
         }
 
-        btnSelectBgImage.setOnClickListener {
-            imagePickerLauncher.launch(arrayOf("image/*"))
-        }
+        btnSelectBgImage.setOnClickListener { imagePickerLauncher.launch(arrayOf("image/*")) }
         btnResetBgImage.setOnClickListener {
             prefs.edit().remove("BG_IMAGE_URI").apply()
             Toast.makeText(this, "Фон сброшен", Toast.LENGTH_SHORT).show()
-            updateBgColorVisibility() // Показываем выбор цвета снова
+            updateBgColorVisibility()
         }
 
         val savedAlpha = prefs.getInt("BG_IMAGE_ALPHA", 255)
@@ -123,18 +144,35 @@ class SettingsActivity : AppCompatActivity() {
             override fun onStopTrackingTouch(seekBar: SeekBar?) {}
         })
 
-        // Установка начальной видимости цветов фона
         updateBgColorVisibility()
 
         // === 2. ДРУГИЕ НАСТРОЙКИ ===
 
-        switchAutoBrightness.isChecked = prefs.getBoolean("AUTO_BRIGHTNESS", false)
-        switchAutoBrightness.setOnCheckedChangeListener { _, isChecked -> prefs.edit().putBoolean("AUTO_BRIGHTNESS", isChecked).apply() }
+        fun updateRedTintVisibility(isAutoBrightnessOn: Boolean) {
+            if (isAutoBrightnessOn) {
+                containerRedTint.visibility = View.VISIBLE
+            } else {
+                containerRedTint.visibility = View.GONE
+            }
+        }
+
+        val isAutoBrightness = prefs.getBoolean("AUTO_BRIGHTNESS", false)
+        switchAutoBrightness.isChecked = isAutoBrightness
+        updateRedTintVisibility(isAutoBrightness)
+
+        switchAutoBrightness.setOnCheckedChangeListener { _, isChecked ->
+            prefs.edit().putBoolean("AUTO_BRIGHTNESS", isChecked).apply()
+            updateRedTintVisibility(isChecked)
+        }
+
+        switchRedTint.isChecked = prefs.getBoolean("RED_TINT_ENABLED", false)
+        switchRedTint.setOnCheckedChangeListener { _, isChecked ->
+            prefs.edit().putBoolean("RED_TINT_ENABLED", isChecked).apply()
+        }
 
         switchAutoLocation.isChecked = prefs.getBoolean("AUTO_LOCATION", false)
         switchAutoLocation.setOnCheckedChangeListener { _, isChecked -> prefs.edit().putBoolean("AUTO_LOCATION", isChecked).apply() }
 
-        // --- БАТАРЕЯ ---
         switchShowBattery.isChecked = prefs.getBoolean("SHOW_BATTERY_STATUS", true)
         switchShowBattery.setOnCheckedChangeListener { _, isChecked -> prefs.edit().putBoolean("SHOW_BATTERY_STATUS", isChecked).apply() }
 
@@ -151,7 +189,6 @@ class SettingsActivity : AppCompatActivity() {
         }
 
         // === 3. РЕЖИМЫ И ТЕМЫ ===
-
         fun updateVisibility() {
             val isSplit = prefs.getBoolean("IS_SPLIT_MODE", false)
             val sideMode = prefs.getInt("SIDE_CONTENT_MODE", 0)
@@ -196,7 +233,18 @@ class SettingsActivity : AppCompatActivity() {
         btnBack.setOnClickListener { finish() }
     }
 
-    // Логика скрытия выбора цвета фона
+    override fun onResume() {
+        super.onResume()
+        if (Settings.canDrawOverlays(this)) {
+            // Права есть
+        } else {
+            if (prefs.getBoolean("BG_MODE_ENABLED", false)) {
+                prefs.edit().putBoolean("BG_MODE_ENABLED", false).apply()
+                switchBgMode.isChecked = false
+            }
+        }
+    }
+
     private fun updateBgColorVisibility() {
         val hasBgImage = prefs.getString("BG_IMAGE_URI", null) != null
         if (hasBgImage) {

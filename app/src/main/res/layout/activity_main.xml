@@ -39,15 +39,10 @@
                 android:layout_gravity="center"
                 android:gravity="center">
 
-                <TextClock
-                    android:id="@+id/textClock"
+                <TextSwitcher
+                    android:id="@+id/tsClock"
                     android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:format12Hour="h:mm a"
-                    android:format24Hour="HH:mm"
-                    android:textColor="@android:color/white"
-                    android:textSize="100sp"
-                    android:fontFamily="sans-serif-thin" />
+                    android:layout_height="wrap_content" />
 
                 <TextClock
                     android:id="@+id/textDateSmall"
