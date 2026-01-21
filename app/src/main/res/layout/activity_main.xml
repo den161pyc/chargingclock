@@ -3,10 +3,23 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/rootLayout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@android:color/black"
     tools:context=".MainActivity">
+
+    <ImageView
+        android:id="@+id/ivBackground"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scaleType="centerCrop"
+        android:visibility="gone"
+        tools:visibility="visible"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -52,26 +65,54 @@
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="1"
-            android:visibility="gone"> <TextClock
-            android:id="@+id/textDateLarge"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:format12Hour="d MMMM\nEEEE"
-            android:format24Hour="d MMMM\nEEEE"
-            android:textColor="@android:color/white"
-            android:textSize="60sp"
-            android:gravity="center"
-            android:fontFamily="sans-serif-light"/>
+            android:visibility="gone">
+
+            <TextClock
+                android:id="@+id/textDateLarge"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:format12Hour="d MMMM\nEEEE"
+                android:format24Hour="d MMMM\nEEEE"
+                android:textColor="@android:color/white"
+                android:textSize="60sp"
+                android:gravity="center"
+                android:fontFamily="sans-serif-light"/>
 
             <CalendarView
                 android:id="@+id/calendarView"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_gravity="center"
-                android:theme="@style/ThemeOverlay.AppCompat.Dark"/>
-        </FrameLayout>
+                android:layout_gravity="center"/>
 
+            <LinearLayout
+                android:id="@+id/weatherLayout"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:layout_gravity="center"
+                android:visibility="gone">
+
+                <TextView
+                    android:id="@+id/tvWeatherTemp"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="--°"
+                    android:textColor="@android:color/white"
+                    android:textSize="90sp"
+                    android:fontFamily="sans-serif-thin"/>
+
+                <TextView
+                    android:id="@+id/tvWeatherCondition"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Загрузка..."
+                    android:textColor="#AAAAAA"
+                    android:textSize="24sp"
+                    android:gravity="center"/>
+            </LinearLayout>
+        </FrameLayout>
     </LinearLayout>
 
     <TextView
