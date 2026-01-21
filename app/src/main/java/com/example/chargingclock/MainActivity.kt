@@ -4,18 +4,37 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.hardware.Sensor
+import android.hardware.SensorEvent
+import android.hardware.SensorEventListener
+import android.hardware.SensorManager
 import android.os.BatteryManager
 import android.os.Bundle
 import android.view.View
 import android.view.WindowManager
+import android.widget.CalendarView
+import android.widget.FrameLayout
+import android.widget.ImageButton
+import android.widget.TextClock
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : AppCompatActivity(), SensorEventListener {
 
     private lateinit var batteryStatusText: TextView
+    private lateinit var btnSettings: ImageButton
 
-    // Приемник событий подключения/отключения питания
+    // Элементы нового интерфейса
+    private lateinit var containerSide: FrameLayout
+    private lateinit var textDateSmall: TextClock
+    private lateinit var textDateLarge: TextClock
+    private lateinit var calendarView: CalendarView
+
+    // Переменные настроек
+    private lateinit var sensorManager: SensorManager
+    private var lightSensor: Sensor? = null
+    private var isAutoBrightnessEnabled = false
+
     private val powerReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             when (intent?.action) {
@@ -24,8 +43,6 @@ class MainActivity : AppCompatActivity() {
                     batteryStatusText.setTextColor(getColor(android.R.color.holo_green_light))
                 }
                 Intent.ACTION_POWER_DISCONNECTED -> {
-                    // Опционально: закрыть приложение, если сняли с зарядки
-                    // finish()
                     batteryStatusText.text = "Работа от батареи"
                     batteryStatusText.setTextColor(getColor(android.R.color.holo_red_light))
                 }
@@ -35,39 +52,105 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        // 1. Не выключать экран
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-
         setContentView(R.layout.activity_main)
-        batteryStatusText = findViewById(R.id.batteryStatus)
 
-        // Регистрируем слушатель питания
+        // Инициализация View
+        batteryStatusText = findViewById(R.id.batteryStatus)
+        btnSettings = findViewById(R.id.btnSettings)
+
+        containerSide = findViewById(R.id.containerSide)
+        textDateSmall = findViewById(R.id.textDateSmall)
+        textDateLarge = findViewById(R.id.textDateLarge)
+        calendarView = findViewById(R.id.calendarView)
+
+        sensorManager = getSystemService(Context.SENSOR_SERVICE) as SensorManager
+        lightSensor = sensorManager.getDefaultSensor(Sensor.TYPE_LIGHT)
+
+        btnSettings.setOnClickListener {
+            startActivity(Intent(this, SettingsActivity::class.java))
+        }
+
         val filter = IntentFilter().apply {
             addAction(Intent.ACTION_POWER_CONNECTED)
             addAction(Intent.ACTION_POWER_DISCONNECTED)
         }
         registerReceiver(powerReceiver, filter)
-
-        // Обновим статус батареи сразу при запуске
         updateInitialBatteryStatus()
     }
 
     override fun onResume() {
         super.onResume()
         hideSystemUI()
+
+        // Считываем все настройки
+        val prefs = getSharedPreferences("AppConfig", Context.MODE_PRIVATE)
+        isAutoBrightnessEnabled = prefs.getBoolean("AUTO_BRIGHTNESS", false)
+
+        val isSplitMode = prefs.getBoolean("IS_SPLIT_MODE", false)
+        val isCalendarSide = prefs.getBoolean("IS_CALENDAR_SIDE", false)
+
+        // Применяем настройки авто-яркости
+        if (isAutoBrightnessEnabled) {
+            lightSensor?.let { sensorManager.registerListener(this, it, SensorManager.SENSOR_DELAY_NORMAL) }
+        } else {
+            sensorManager.unregisterListener(this)
+            resetBrightness()
+        }
+
+        // Применяем настройки интерфейса (Часы или Сплит)
+        if (isSplitMode) {
+            containerSide.visibility = View.VISIBLE
+            textDateSmall.visibility = View.GONE // Прячем маленькую дату, так как есть большая справа
+
+            // Выбираем, что показать справа
+            if (isCalendarSide) {
+                calendarView.visibility = View.VISIBLE
+                textDateLarge.visibility = View.GONE
+            } else {
+                calendarView.visibility = View.GONE
+                textDateLarge.visibility = View.VISIBLE
+            }
+        } else {
+            // Режим "Только часы"
+            containerSide.visibility = View.GONE
+            textDateSmall.visibility = View.VISIBLE
+        }
     }
 
-    // Если пользователь коснулся экрана, панели могут появиться.
-    // Скрываем их снова при потере фокуса или таймере, но проще при клике.
+    override fun onPause() {
+        super.onPause()
+        sensorManager.unregisterListener(this)
+    }
+
+    // --- Логика датчика света ---
+    override fun onSensorChanged(event: SensorEvent?) {
+        if (isAutoBrightnessEnabled && event?.sensor?.type == Sensor.TYPE_LIGHT) {
+            val lux = event.values[0]
+            val layoutParams = window.attributes
+            if (lux < 5f) {
+                layoutParams.screenBrightness = 0.01f
+            } else {
+                layoutParams.screenBrightness = WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
+            }
+            window.attributes = layoutParams
+        }
+    }
+
+    override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {}
+
+    private fun resetBrightness() {
+        val layoutParams = window.attributes
+        layoutParams.screenBrightness = WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
+        window.attributes = layoutParams
+    }
+
     override fun onWindowFocusChanged(hasFocus: Boolean) {
         super.onWindowFocusChanged(hasFocus)
         if (hasFocus) hideSystemUI()
     }
 
-    // Функция для скрытия навигации и статус бара (Full Screen)
     private fun hideSystemUI() {
-        // Используем старый добрый метод флагов, который работает и на Android 8, и на 14
         window.decorView.systemUiVisibility = (View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
                 or View.SYSTEM_UI_FLAG_LAYOUT_STABLE
                 or View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION

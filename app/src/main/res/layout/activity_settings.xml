@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="24dp"
+    android:background="@android:color/black">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Настройки"
+        android:textColor="@android:color/white"
+        android:textSize="32sp"
+        android:layout_marginBottom="24dp"/>
+
+    <Switch
+        android:id="@+id/switchAutoBrightness"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Авто-затемнение (ночной режим)"
+        android:textColor="@android:color/white"
+        android:textSize="18sp"
+        android:minHeight="48dp"/>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="#333333"
+        android:layout_marginTop="16dp"
+        android:layout_marginBottom="16dp"/>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Режим отображения:"
+        android:textColor="#AAAAAA"
+        android:textSize="14sp"/>
+
+    <RadioGroup
+        android:id="@+id/rgDisplayMode"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:layout_marginTop="8dp">
+
+        <RadioButton
+            android:id="@+id/rbModeClock"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Только часы (во весь экран)"
+            android:textColor="@android:color/white"/>
+
+        <RadioButton
+            android:id="@+id/rbModeSplit"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Разделение экрана (50/50)"
+            android:textColor="@android:color/white"/>
+    </RadioGroup>
+
+    <LinearLayout
+        android:id="@+id/containerSplitOptions"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:layout_marginTop="16dp"
+        android:paddingStart="16dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="В правой части показывать:"
+            android:textColor="#AAAAAA"
+            android:textSize="14sp"/>
+
+        <RadioGroup
+            android:id="@+id/rgSideContent"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_marginTop="8dp">
+
+            <RadioButton
+                android:id="@+id/rbSideDate"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Текущая дата"
+                android:textColor="@android:color/white"/>
+
+            <RadioButton
+                android:id="@+id/rbSideCalendar"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Календарь"
+                android:textColor="@android:color/white"/>
+        </RadioGroup>
+    </LinearLayout>
+
+    <Button
+        android:id="@+id/btnBack"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Назад"
+        android:layout_marginTop="32dp"/>
+
+</LinearLayout>
