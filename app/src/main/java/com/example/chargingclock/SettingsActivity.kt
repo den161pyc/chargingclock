@@ -28,8 +28,8 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var tvAlphaLabel: TextView
     private lateinit var containerBgColor: LinearLayout
     private lateinit var containerRedTint: LinearLayout
-    private lateinit var containerNightBrightness: LinearLayout // НОВОЕ
-    private lateinit var tvNightBrightnessValue: TextView // НОВОЕ
+    private lateinit var containerNightBrightness: LinearLayout
+    private lateinit var tvNightBrightnessValue: TextView
     private lateinit var switchBgMode: Switch
 
     private val fontPickerLauncher = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
@@ -74,7 +74,6 @@ class SettingsActivity : AppCompatActivity() {
         containerRedTint = findViewById(R.id.containerRedTint)
         val switchRedTint = findViewById<Switch>(R.id.switchRedTint)
 
-        // НОВЫЕ ПОЛЯ ЯРКОСТИ
         containerNightBrightness = findViewById(R.id.containerNightBrightness)
         tvNightBrightnessValue = findViewById(R.id.tvNightBrightnessValue)
         val seekBarNightBrightness = findViewById<SeekBar>(R.id.seekBarNightBrightness)
@@ -153,7 +152,7 @@ class SettingsActivity : AppCompatActivity() {
 
         updateBgColorVisibility()
 
-        // === 2. АВТО-ЯРКОСТЬ И СВЯЗАННЫЕ НАСТРОЙКИ ===
+        // === 2. ДРУГИЕ НАСТРОЙКИ ===
 
         fun updateAutoBrightnessVisibility(isEnabled: Boolean) {
             if (isEnabled) {
@@ -174,7 +173,6 @@ class SettingsActivity : AppCompatActivity() {
             updateAutoBrightnessVisibility(isChecked)
         }
 
-        // Настройка уровня ночной яркости
         val savedNightBrightness = prefs.getInt("NIGHT_BRIGHTNESS_LEVEL", 1)
         seekBarNightBrightness.progress = savedNightBrightness
         tvNightBrightnessValue.text = "Яркость в ночном режиме: $savedNightBrightness%"
@@ -182,7 +180,7 @@ class SettingsActivity : AppCompatActivity() {
         seekBarNightBrightness.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
                 var value = progress
-                if (value < 1) value = 1 // Минимум 1%
+                if (value < 1) value = 1
                 tvNightBrightnessValue.text = "Яркость в ночном режиме: $value%"
                 prefs.edit().putInt("NIGHT_BRIGHTNESS_LEVEL", value).apply()
             }
@@ -190,7 +188,6 @@ class SettingsActivity : AppCompatActivity() {
             override fun onStopTrackingTouch(seekBar: SeekBar?) {}
         })
 
-        // Настройка красного оттенка
         switchRedTint.isChecked = prefs.getBoolean("RED_TINT_ENABLED", false)
         switchRedTint.setOnCheckedChangeListener { _, isChecked ->
             prefs.edit().putBoolean("RED_TINT_ENABLED", isChecked).apply()

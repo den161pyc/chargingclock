@@ -89,14 +89,30 @@
                 android:layout_gravity="center"
                 android:visibility="gone">
 
-                <TextView
-                    android:id="@+id/tvWeatherTemp"
+                <LinearLayout
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="--°"
-                    android:textColor="@android:color/white"
-                    android:textSize="90sp"
-                    android:fontFamily="sans-serif-thin"/>
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+
+                    <TextView
+                        android:id="@+id/tvWeatherIcon"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text=""
+                        android:textSize="70sp"
+                        android:layout_marginEnd="16dp"
+                        android:gravity="center"/>
+
+                    <TextView
+                        android:id="@+id/tvWeatherTemp"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="--°"
+                        android:textColor="@android:color/white"
+                        android:textSize="80sp"
+                        android:fontFamily="sans-serif-thin"/>
+                </LinearLayout>
 
                 <TextView
                     android:id="@+id/tvWeatherCondition"

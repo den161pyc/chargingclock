@@ -38,6 +38,10 @@ import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.app.ActivityCompat
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import java.io.FileDescriptor
 import java.net.HttpURLConnection
@@ -45,7 +49,6 @@ import java.net.URL
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-import kotlinx.coroutines.*
 
 class MainActivity : AppCompatActivity(), SensorEventListener {
 
@@ -67,6 +70,7 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
     private lateinit var weatherLayout: LinearLayout
     private lateinit var tvWeatherTemp: TextView
     private lateinit var tvWeatherCondition: TextView
+    private lateinit var tvWeatherIcon: TextView
 
     private lateinit var sensorManager: SensorManager
     private var lightSensor: Sensor? = null
@@ -166,6 +170,7 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         weatherLayout = findViewById(R.id.weatherLayout)
         tvWeatherTemp = findViewById(R.id.tvWeatherTemp)
         tvWeatherCondition = findViewById(R.id.tvWeatherCondition)
+        tvWeatherIcon = findViewById(R.id.tvWeatherIcon)
 
         sensorManager = getSystemService(Context.SENSOR_SERVICE) as SensorManager
         lightSensor = sensorManager.getDefaultSensor(Sensor.TYPE_LIGHT)
@@ -227,7 +232,10 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         if (isSplitMode) {
             containerSide.visibility = View.VISIBLE
             textDateSmall.visibility = View.GONE
-            setClockSize(150f)
+
+            // --- ИЗМЕНЕНИЕ: 130f ВМЕСТО 150f ---
+            setClockSize(130f)
+
             textDateLarge.visibility = View.GONE
             calendarView.visibility = View.GONE
             weatherLayout.visibility = View.GONE
@@ -266,12 +274,8 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
             val layoutParams = window.attributes
 
             if (lux < 5f) {
-                // --- ТЕМНО ---
-                // Считываем пользовательскую настройку яркости (1-100)
                 val prefs = getSharedPreferences("AppConfig", Context.MODE_PRIVATE)
                 val nightLevel = prefs.getInt("NIGHT_BRIGHTNESS_LEVEL", 1)
-
-                // Конвертируем в float (0.01 - 1.0)
                 layoutParams.screenBrightness = if (nightLevel < 1) 0.01f else nightLevel / 100f
 
                 if (!isNightModeActive) {
@@ -281,7 +285,6 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
                     }
                 }
             } else {
-                // --- СВЕТЛО ---
                 layoutParams.screenBrightness = WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
 
                 if (isNightModeActive) {
@@ -316,6 +319,7 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         textDateLarge.setTextColor(color)
         tvWeatherTemp.setTextColor(color)
         tvWeatherCondition.setTextColor(color)
+        tvWeatherIcon.setTextColor(color)
         batteryStatusText.setTextColor(color)
     }
 
@@ -334,6 +338,7 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         textDateLarge.setTextColor(color)
         tvWeatherTemp.setTextColor(color)
         tvWeatherCondition.setTextColor(color)
+        tvWeatherIcon.setTextColor(color)
 
         val bgImageUri = prefs.getString("BG_IMAGE_URI", null)
         if (bgImageUri != null) {
@@ -360,6 +365,13 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         val currentViewText = (tsClock.currentView as? TextView)?.text?.toString()
         if (currentViewText != currentTime) {
             tsClock.setText(currentTime)
+        }
+
+        // --- ИСПРАВЛЕНИЕ: Обновление календаря ---
+        // Если календарь виден, обновляем его дату на текущую,
+        // чтобы при наступлении полуночи кружок перепрыгнул на новый день.
+        if (calendarView.visibility == View.VISIBLE) {
+            calendarView.date = System.currentTimeMillis()
         }
     }
 
@@ -421,6 +433,7 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
                     textDateLarge.typeface = typeface
                     tvWeatherTemp.typeface = typeface
                     tvWeatherCondition.typeface = typeface
+                    tvWeatherIcon.typeface = typeface
                     batteryStatusText.typeface = typeface
                 }
             } catch (e: Exception) { resetFonts() }
@@ -435,6 +448,7 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         textDateLarge.typeface = Typeface.create("sans-serif-light", Typeface.NORMAL)
         tvWeatherTemp.typeface = clockTypeface
         tvWeatherCondition.typeface = defaultTypeface
+        tvWeatherIcon.typeface = defaultTypeface
         batteryStatusText.typeface = defaultTypeface
     }
 
@@ -471,6 +485,7 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
             CoroutineScope(Dispatchers.Main).launch {
                 tvWeatherCondition.text = "Введите ключ"
                 tvWeatherTemp.text = "--"
+                tvWeatherIcon.text = ""
             }
             return
         }
@@ -489,10 +504,12 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
                     val temp = fact.getInt("temp")
                     val condition = fact.getString("condition")
                     val conditionRu = translateCondition(condition)
+                    val icon = getWeatherIcon(condition)
 
                     withContext(Dispatchers.Main) {
                         tvWeatherTemp.text = "${if(temp > 0) "+" else ""}$temp°"
                         tvWeatherCondition.text = conditionRu
+                        tvWeatherIcon.text = icon
                     }
                 } else {
                     withContext(Dispatchers.Main) {
@@ -503,6 +520,27 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) { tvWeatherCondition.text = "Нет сети" }
             }
+        }
+    }
+
+    private fun getWeatherIcon(cond: String): String {
+        return when(cond) {
+            "clear" -> "☀️"
+            "partly-cloudy" -> "⛅"
+            "cloudy" -> "☁️"
+            "overcast" -> "☁️"
+            "drizzle" -> "🌦️"
+            "light-rain" -> "🌧️"
+            "rain" -> "🌧️"
+            "moderate-rain" -> "🌧️"
+            "heavy-rain" -> "⛈️"
+            "showers" -> "☔"
+            "wet-snow" -> "🌨️"
+            "light-snow" -> "🌨️"
+            "snow" -> "❄️"
+            "hail" -> "🌨️"
+            "thunderstorm" -> "⚡"
+            else -> "🌡️"
         }
     }
 
