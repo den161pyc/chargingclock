@@ -13,4 +13,7 @@
     <color name="accent_green">#69F0AE</color>
     <color name="accent_yellow">#FFD740</color>
     <color name="accent_purple">#E040FB</color>
+    <color name="switch_thumb_off">#B0B0B0</color>
+    <color name="switch_track_off">#707070</color>
+    <color name="switch_track_on">#80448AFF</color>
 </resources>

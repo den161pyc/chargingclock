@@ -45,35 +45,11 @@
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
                     android:gravity="center">
-
-                    <TextSwitcher
-                        android:id="@+id/tsHour1"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content" />
-
-                    <TextSwitcher
-                        android:id="@+id/tsHour2"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content" />
-
-                    <TextView
-                        android:id="@+id/tvSeparator"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text=":"
-                        android:includeFontPadding="false"
-                        android:gravity="center"
-                        android:layout_marginBottom="8dp"/>
-
-                    <TextSwitcher
-                        android:id="@+id/tsMinute1"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content" />
-
-                    <TextSwitcher
-                        android:id="@+id/tsMinute2"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content" />
+                    <TextSwitcher android:id="@+id/tsHour1" android:layout_width="wrap_content" android:layout_height="wrap_content" />
+                    <TextSwitcher android:id="@+id/tsHour2" android:layout_width="wrap_content" android:layout_height="wrap_content" />
+                    <TextView android:id="@+id/tvSeparator" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text=":" android:includeFontPadding="false" android:gravity="center" android:layout_marginBottom="8dp"/>
+                    <TextSwitcher android:id="@+id/tsMinute1" android:layout_width="wrap_content" android:layout_height="wrap_content" />
+                    <TextSwitcher android:id="@+id/tsMinute2" android:layout_width="wrap_content" android:layout_height="wrap_content" />
                 </LinearLayout>
 
                 <TextClock
@@ -106,54 +82,83 @@
                 android:gravity="center"
                 android:fontFamily="sans-serif-light"/>
 
-            <CalendarView
-                android:id="@+id/calendarView"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center"/>
-
             <LinearLayout
-                android:id="@+id/weatherLayout"
+                android:id="@+id/calendarLayout"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
                 android:gravity="center"
                 android:layout_gravity="center"
-                android:visibility="gone">
-
-                <LinearLayout
+                android:visibility="gone"
+                android:padding="8dp"
+                android:background="?attr/selectableItemBackground">
+                <CalendarView
+                    android:id="@+id/calendarView"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical">
+                    android:layout_gravity="center"
+                    android:clickable="false"
+                    android:focusable="false"/>
+                <TextView
+                    android:id="@+id/tvEvent"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text=""
+                    android:textColor="#AAAAAA"
+                    android:textSize="16sp"
+                    android:gravity="center"
+                    android:layout_marginTop="8dp"
+                    android:visibility="gone"/>
+            </LinearLayout>
 
-                    <TextView
-                        android:id="@+id/tvWeatherIcon"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text=""
-                        android:textSize="70sp"
-                        android:layout_marginEnd="16dp"
-                        android:gravity="center"/>
+            <LinearLayout
+                android:id="@+id/weatherLayout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:gravity="start|center_vertical"
+                android:layout_gravity="center_vertical"
+                android:paddingStart="48dp"
+                android:visibility="gone">
 
-                    <TextView
-                        android:id="@+id/tvWeatherTemp"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="--°"
-                        android:textColor="@android:color/white"
-                        android:textSize="80sp"
-                        android:fontFamily="sans-serif-thin"/>
-                </LinearLayout>
+                <TextView
+                    android:id="@+id/tvLocation"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Загрузка..."
+                    android:textColor="@android:color/white"
+                    android:textSize="28sp"
+                    android:textStyle="bold"
+                    android:layout_marginBottom="0dp"/>
+
+                <TextView
+                    android:id="@+id/tvWeatherTemp"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="--°"
+                    android:textColor="@android:color/white"
+                    android:textSize="110sp"
+                    android:textStyle="bold"
+                    android:includeFontPadding="false"
+                    android:layout_marginStart="-4dp"/>
+
+                <TextView
+                    android:id="@+id/tvWeatherIcon"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text=""
+                    android:textSize="32sp"
+                    android:layout_marginTop="8dp"/>
 
                 <TextView
                     android:id="@+id/tvWeatherCondition"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Загрузка..."
-                    android:textColor="#AAAAAA"
-                    android:textSize="24sp"
-                    android:gravity="center"/>
+                    android:text="..."
+                    android:textColor="@android:color/white"
+                    android:textSize="22sp"
+                    android:textStyle="bold"
+                    android:layout_marginTop="4dp"/>
             </LinearLayout>
 
             <LinearLayout
@@ -164,93 +169,19 @@
                 android:gravity="center"
                 android:padding="16dp"
                 android:visibility="gone">
-
-                <androidx.cardview.widget.CardView
-                    android:layout_width="160dp"
-                    android:layout_height="160dp"
-                    app:cardCornerRadius="16dp"
-                    app:cardElevation="0dp"
-                    android:layout_marginBottom="12dp"
-                    app:cardBackgroundColor="@android:color/transparent">
-                    <ImageView
-                        android:id="@+id/ivAlbumArt"
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:scaleType="centerCrop"
-                        android:background="#333333"
-                        android:src="@android:drawable/ic_menu_gallery"/>
+                <androidx.cardview.widget.CardView android:layout_width="160dp" android:layout_height="160dp" app:cardCornerRadius="16dp" app:cardElevation="0dp" android:layout_marginBottom="12dp" app:cardBackgroundColor="@android:color/transparent">
+                    <ImageView android:id="@+id/ivAlbumArt" android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="centerCrop" android:background="#333333" android:src="@android:drawable/ic_menu_gallery"/>
                 </androidx.cardview.widget.CardView>
-
-                <TextView
-                    android:id="@+id/tvTrackTitle"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="Нет музыки"
-                    android:textColor="@android:color/white"
-                    android:textSize="20sp"
-                    android:textStyle="bold"
-                    android:gravity="center"
-                    android:singleLine="true"
-                    android:ellipsize="marquee"
-                    android:marqueeRepeatLimit="marquee_forever" />
-
-                <TextView
-                    android:id="@+id/tvTrackArtist"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="Ожидание..."
-                    android:textColor="#AAAAAA"
-                    android:textSize="14sp"
-                    android:gravity="center"
-                    android:singleLine="true"
-                    android:layout_marginBottom="12dp"/>
-
-                <SeekBar
-                    android:id="@+id/seekBarMusic"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:progressTint="@android:color/white"
-                    android:thumbTint="@android:color/white"
-                    android:layout_marginBottom="12dp"/>
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center">
-
-                    <ImageButton
-                        android:id="@+id/btnPrev"
-                        android:layout_width="56dp"
-                        android:layout_height="56dp"
-                        android:src="@android:drawable/ic_media_previous"
-                        android:background="?attr/selectableItemBackgroundBorderless"
-                        app:tint="@android:color/white"
-                        android:scaleType="fitCenter"
-                        android:padding="12dp"/>
-
-                    <ImageButton
-                        android:id="@+id/btnPlayPause"
-                        android:layout_width="72dp"
-                        android:layout_height="72dp"
-                        android:src="@android:drawable/ic_media_play"
-                        android:background="?attr/selectableItemBackgroundBorderless"
-                        app:tint="@android:color/white"
-                        android:scaleType="fitCenter"
-                        android:padding="10dp"
-                        android:layout_marginHorizontal="20dp"/>
-
-                    <ImageButton
-                        android:id="@+id/btnNext"
-                        android:layout_width="56dp"
-                        android:layout_height="56dp"
-                        android:src="@android:drawable/ic_media_next"
-                        android:background="?attr/selectableItemBackgroundBorderless"
-                        app:tint="@android:color/white"
-                        android:scaleType="fitCenter"
-                        android:padding="12dp"/>
+                <TextView android:id="@+id/tvTrackTitle" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Нет музыки" android:textColor="@android:color/white" android:textSize="20sp" android:textStyle="bold" android:gravity="center" android:singleLine="true" android:ellipsize="marquee" android:marqueeRepeatLimit="marquee_forever"/>
+                <TextView android:id="@+id/tvTrackArtist" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Ожидание..." android:textColor="#AAAAAA" android:textSize="14sp" android:gravity="center" android:singleLine="true" android:layout_marginBottom="12dp"/>
+                <SeekBar android:id="@+id/seekBarMusic" android:layout_width="match_parent" android:layout_height="wrap_content" android:progressTint="@android:color/white" android:thumbTint="@android:color/white" android:layout_marginBottom="12dp"/>
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center">
+                    <ImageButton android:id="@+id/btnPrev" android:layout_width="56dp" android:layout_height="56dp" android:src="@android:drawable/ic_media_previous" android:background="?attr/selectableItemBackgroundBorderless" app:tint="@android:color/white" android:scaleType="fitCenter" android:padding="12dp"/>
+                    <ImageButton android:id="@+id/btnPlayPause" android:layout_width="72dp" android:layout_height="72dp" android:src="@android:drawable/ic_media_play" android:background="?attr/selectableItemBackgroundBorderless" app:tint="@android:color/white" android:scaleType="fitCenter" android:padding="10dp" android:layout_marginHorizontal="20dp"/>
+                    <ImageButton android:id="@+id/btnNext" android:layout_width="56dp" android:layout_height="56dp" android:src="@android:drawable/ic_media_next" android:background="?attr/selectableItemBackgroundBorderless" app:tint="@android:color/white" android:scaleType="fitCenter" android:padding="12dp"/>
                 </LinearLayout>
             </LinearLayout>
+
         </FrameLayout>
     </LinearLayout>
 

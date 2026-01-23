@@ -24,6 +24,7 @@ import androidx.core.widget.addTextChangedListener
 class SettingsActivity : AppCompatActivity() {
 
     private lateinit var prefs: SharedPreferences
+    // ... (остальные переменные)
     private lateinit var tvFontLabel: TextView
     private lateinit var tvAlphaLabel: TextView
     private lateinit var containerBgColor: LinearLayout
@@ -95,11 +96,15 @@ class SettingsActivity : AppCompatActivity() {
         val switchShowDate = findViewById<Switch>(R.id.switchShowDate)
 
         val rgSideContent = findViewById<RadioGroup>(R.id.rgSideContent)
+
+        // НОВОЕ: Настройки календаря
+        val containerCalendarOptions = findViewById<LinearLayout>(R.id.containerCalendarOptions)
+        val switchShowCalendarEvents = findViewById<Switch>(R.id.switchShowCalendarEvents)
+
         val btnBack = findViewById<Button>(R.id.btnBack)
 
         // === 0. ФОНОВЫЙ РЕЖИМ ===
         switchBgMode.isChecked = prefs.getBoolean("BG_MODE_ENABLED", false)
-
         switchBgMode.setOnClickListener {
             val isChecked = switchBgMode.isChecked
             if (isChecked) {
@@ -153,7 +158,6 @@ class SettingsActivity : AppCompatActivity() {
         updateBgColorVisibility()
 
         // === 2. ДРУГИЕ НАСТРОЙКИ ===
-
         fun updateAutoBrightnessVisibility(isEnabled: Boolean) {
             if (isEnabled) {
                 containerRedTint.visibility = View.VISIBLE
@@ -219,10 +223,13 @@ class SettingsActivity : AppCompatActivity() {
                 containerSplitOptions.visibility = View.VISIBLE
                 containerClockOptions.visibility = View.GONE
                 containerThemeColor.visibility = if (sideMode == 1) View.VISIBLE else View.GONE
+                // Видимость опции событий (если выбран календарь)
+                containerCalendarOptions.visibility = if (sideMode == 1) View.VISIBLE else View.GONE
             } else {
                 containerSplitOptions.visibility = View.GONE
                 containerClockOptions.visibility = View.VISIBLE
                 containerThemeColor.visibility = View.GONE
+                containerCalendarOptions.visibility = View.GONE
             }
         }
 
@@ -236,6 +243,12 @@ class SettingsActivity : AppCompatActivity() {
 
         switchShowDate.isChecked = prefs.getBoolean("SHOW_CLOCK_DATE", true)
         switchShowDate.setOnCheckedChangeListener { _, isChecked -> prefs.edit().putBoolean("SHOW_CLOCK_DATE", isChecked).apply() }
+
+        // Календарные события
+        switchShowCalendarEvents.isChecked = prefs.getBoolean("SHOW_CALENDAR_EVENTS", false)
+        switchShowCalendarEvents.setOnCheckedChangeListener { _, isChecked ->
+            prefs.edit().putBoolean("SHOW_CALENDAR_EVENTS", isChecked).apply()
+        }
 
         val sideMode = prefs.getInt("SIDE_CONTENT_MODE", 0)
         (rgSideContent.getChildAt(sideMode) as? RadioButton)?.isChecked = true
