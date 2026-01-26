@@ -38,140 +38,182 @@
                 android:layout_marginBottom="12dp"
                 android:padding="20dp">
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Режим экрана"
-                    android:textColor="#AAAAAA"
-                    android:textSize="14sp"
-                    android:layout_marginBottom="16dp"/>
-
-                <RadioGroup
-                    android:id="@+id/rgDisplayMode"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_horizontal">
-
-                    <RadioButton
-                        android:id="@+id/rbModeClock"
-                        android:layout_width="0dp"
-                        android:layout_weight="1"
-                        android:layout_height="wrap_content"
-                        android:text="Часы"
-                        android:textColor="@android:color/white"
-                        android:buttonTint="@color/accent_blue"
-                        android:gravity="center_vertical"/>
-
-                    <RadioButton
-                        android:id="@+id/rbModeSplit"
-                        android:layout_width="0dp"
-                        android:layout_weight="1"
-                        android:layout_height="wrap_content"
-                        android:text="Разделение"
-                        android:textColor="@android:color/white"
-                        android:buttonTint="@color/accent_blue"
-                        android:gravity="center_vertical"/>
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Режим экрана" android:textColor="#AAAAAA" android:textSize="14sp" android:layout_marginBottom="16dp"/>
+                <RadioGroup android:id="@+id/rgDisplayMode" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_horizontal">
+                    <RadioButton android:id="@+id/rbModeClock" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="Часы" android:textColor="@android:color/white" android:buttonTint="@color/accent_blue" android:gravity="center_vertical"/>
+                    <RadioButton android:id="@+id/rbModeSplit" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="Разделение" android:textColor="@android:color/white" android:buttonTint="@color/accent_blue" android:gravity="center_vertical"/>
                 </RadioGroup>
 
-                <LinearLayout
-                    android:id="@+id/containerSplitOptions"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:layout_marginTop="16dp">
-
+                <LinearLayout android:id="@+id/containerSplitOptions" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:layout_marginTop="16dp">
                     <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#333333" android:layout_marginBottom="12dp"/>
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Контент справа:"
-                        android:textColor="#AAAAAA"
-                        android:textSize="14sp"
-                        android:layout_marginBottom="8dp"/>
-
-                    <RadioGroup
-                        android:id="@+id/rgSideContent"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="vertical">
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Контент справа:" android:textColor="#AAAAAA" android:textSize="14sp" android:layout_marginBottom="8dp"/>
+                    <RadioGroup android:id="@+id/rgSideContent" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical">
                         <RadioButton android:id="@+id/rbSideDate" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Дата" android:textColor="@android:color/white" android:buttonTint="@color/accent_blue" android:paddingVertical="8dp"/>
                         <RadioButton android:id="@+id/rbSideCalendar" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Календарь" android:textColor="@android:color/white" android:buttonTint="@color/accent_blue" android:paddingVertical="8dp"/>
                         <RadioButton android:id="@+id/rbSideWeather" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Погода" android:textColor="@android:color/white" android:buttonTint="@color/accent_blue" android:paddingVertical="8dp"/>
                         <RadioButton android:id="@+id/rbSideMusic" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Музыкальный плеер" android:textColor="@android:color/white" android:buttonTint="@color/accent_blue" android:paddingVertical="8dp"/>
                     </RadioGroup>
 
-                    <LinearLayout
-                        android:id="@+id/containerCalendarOptions"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        android:layout_marginTop="8dp"
-                        android:visibility="gone">
+                    <LinearLayout android:id="@+id/containerDateOptions" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:layout_marginTop="8dp" android:visibility="gone">
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Формат даты:" android:textColor="#AAAAAA" android:textSize="12sp" android:layout_marginTop="8dp" android:layout_marginBottom="4dp"/>
+                        <RadioGroup android:id="@+id/rgDateFormat" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical">
+                            <RadioButton android:id="@+id/rbDateFmt1" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Суббота, 25" android:textColor="@android:color/white" android:buttonTint="@color/accent_blue" android:paddingVertical="6dp"/>
+                            <RadioButton android:id="@+id/rbDateFmt2" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Суббота, 25 Января" android:textColor="@android:color/white" android:buttonTint="@color/accent_blue" android:paddingVertical="6dp"/>
+                            <RadioButton android:id="@+id/rbDateFmt3" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="25 Января, Суббота" android:textColor="@android:color/white" android:buttonTint="@color/accent_blue" android:paddingVertical="6dp"/>
+                        </RadioGroup>
+                        <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#333333" android:layout_marginVertical="8dp"/>
+
                         <Switch
-                            android:id="@+id/switchShowCalendarEvents"
+                            android:id="@+id/switchShowNextAlarm"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:text="Показывать события"
+                            android:text="Показывать будильник"
                             android:textColor="@android:color/white"
-                            android:thumbTint="@color/selector_switch_thumb"
-                            android:trackTint="@color/selector_switch_track"
-                            android:minHeight="48dp"/>
+                            android:track="@drawable/custom_switch_track"
+                            android:thumb="@drawable/custom_switch_thumb"
+                            android:minHeight="32dp"
+                            android:layout_marginBottom="12dp"/>
+
+                        <Switch
+                            android:id="@+id/switchShowMiniWeather"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Текущая температура"
+                            android:textColor="@android:color/white"
+                            android:track="@drawable/custom_switch_track"
+                            android:thumb="@drawable/custom_switch_thumb"
+                            android:minHeight="32dp"/>
                     </LinearLayout>
                 </LinearLayout>
-
-                <LinearLayout
-                    android:id="@+id/containerClockOptions"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:visibility="gone"
-                    android:layout_marginTop="8dp">
+                <LinearLayout android:id="@+id/containerClockOptions" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:visibility="gone" android:layout_marginTop="8dp">
                     <Switch
                         android:id="@+id/switchShowDate"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:text="Показывать дату"
                         android:textColor="@android:color/white"
-                        android:thumbTint="@color/selector_switch_thumb"
-                        android:trackTint="@color/selector_switch_track"
-                        android:minHeight="48dp"/>
+                        android:track="@drawable/custom_switch_track"
+                        android:thumb="@drawable/custom_switch_thumb"
+                        android:minHeight="32dp"/>
                 </LinearLayout>
             </LinearLayout>
 
             <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:background="@drawable/bg_settings_card" android:layout_marginHorizontal="16dp" android:layout_marginBottom="12dp" android:padding="20dp">
-                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Цвет указателя" android:textColor="#AAAAAA" android:textSize="14sp" android:layout_marginBottom="12dp"/>
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Шрифт и Цвет" android:textColor="#AAAAAA" android:textSize="14sp" android:layout_marginBottom="12dp"/>
+
+                <TextView android:id="@+id/tvFontLabel" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Шрифт: Стандартный" android:textColor="#FFFFFF" android:textSize="16sp" android:layout_marginBottom="8dp"/>
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_marginBottom="16dp">
+                    <Button android:id="@+id/btnSelectFont" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="Выбрать шрифт" android:backgroundTint="#333333"/>
+                    <Button android:id="@+id/btnResetFont" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Сброс" android:backgroundTint="#333333" android:layout_marginStart="8dp"/>
+                </LinearLayout>
+
+                <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#333333" android:layout_marginBottom="16dp"/>
+
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Цвет текста (Удерживайте для настройки)" android:textColor="#AAAAAA" android:textSize="12sp" android:layout_marginBottom="12dp"/>
                 <HorizontalScrollView android:layout_width="match_parent" android:layout_height="wrap_content" android:scrollbars="none">
                     <RadioGroup android:id="@+id/rgTextColor" android:layout_width="wrap_content" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical">
-                        <RadioButton android:id="@+id/rbTextWhite" android:layout_width="24dp" android:layout_height="24dp" android:background="@drawable/bg_circle_shape" android:backgroundTint="#FFFFFF" android:button="@drawable/selector_radio_check" android:layout_marginEnd="16dp"/>
-                        <RadioButton android:id="@+id/rbTextGreen" android:layout_width="24dp" android:layout_height="24dp" android:background="@drawable/bg_circle_shape" android:backgroundTint="#00FF00" android:button="@drawable/selector_radio_check" android:layout_marginEnd="16dp"/>
-                        <RadioButton android:id="@+id/rbTextCyan" android:layout_width="24dp" android:layout_height="24dp" android:background="@drawable/bg_circle_shape" android:backgroundTint="#00FFFF" android:button="@drawable/selector_radio_check" android:layout_marginEnd="16dp"/>
-                        <RadioButton android:id="@+id/rbTextYellow" android:layout_width="24dp" android:layout_height="24dp" android:background="@drawable/bg_circle_shape" android:backgroundTint="#FFFF00" android:button="@drawable/selector_radio_check" android:layout_marginEnd="16dp"/>
-                        <RadioButton android:id="@+id/rbTextRed" android:layout_width="24dp" android:layout_height="24dp" android:background="@drawable/bg_circle_shape" android:backgroundTint="#FF0000" android:button="@drawable/selector_radio_check" android:layout_marginEnd="16dp"/>
+                        <RadioButton android:id="@+id/rbText1" android:layout_width="32dp" android:layout_height="32dp" android:background="@drawable/bg_circle_shape" android:button="@null" android:foreground="@drawable/selector_check_center" android:gravity="center" android:layout_marginEnd="16dp"/>
+                        <RadioButton android:id="@+id/rbText2" android:layout_width="32dp" android:layout_height="32dp" android:background="@drawable/bg_circle_shape" android:button="@null" android:foreground="@drawable/selector_check_center" android:gravity="center" android:layout_marginEnd="16dp"/>
+                        <RadioButton android:id="@+id/rbText3" android:layout_width="32dp" android:layout_height="32dp" android:background="@drawable/bg_circle_shape" android:button="@null" android:foreground="@drawable/selector_check_center" android:gravity="center" android:layout_marginEnd="16dp"/>
+                        <RadioButton android:id="@+id/rbText4" android:layout_width="32dp" android:layout_height="32dp" android:background="@drawable/bg_circle_shape" android:button="@null" android:foreground="@drawable/selector_check_center" android:gravity="center" android:layout_marginEnd="16dp"/>
+                        <RadioButton android:id="@+id/rbText5" android:layout_width="32dp" android:layout_height="32dp" android:background="@drawable/bg_circle_shape" android:button="@null" android:foreground="@drawable/selector_check_center" android:gravity="center" android:layout_marginEnd="16dp"/>
                     </RadioGroup>
                 </HorizontalScrollView>
-                <LinearLayout android:id="@+id/containerBgColor" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:layout_marginTop="20dp">
-                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Цвет фона" android:textColor="#AAAAAA" android:textSize="14sp" android:layout_marginBottom="12dp"/>
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:background="@drawable/bg_settings_card"
+                android:layout_marginHorizontal="16dp"
+                android:layout_marginBottom="12dp"
+                android:padding="20dp">
+
+                <Switch
+                    android:id="@+id/switchShowPanels"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Отображать подложки"
+                    android:textColor="@android:color/white"
+                    android:textSize="16sp"
+                    android:track="@drawable/custom_switch_track"
+                    android:thumb="@drawable/custom_switch_thumb"
+                    android:minHeight="32dp"/>
+
+                <LinearLayout
+                    android:id="@+id/containerPanelSettings"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:visibility="gone"
+                    android:paddingTop="16dp">
+
+                    <TextView android:id="@+id/tvPanelAlphaLabel" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Прозрачность: 30%" android:textColor="#AAAAAA" android:textSize="12sp" android:layout_marginBottom="8dp"/>
+
+                    <SeekBar
+                        android:id="@+id/seekBarPanelAlpha"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:max="100"
+                        android:progress="30"
+                        android:splitTrack="false"
+                        android:progressDrawable="@drawable/custom_seekbar_progress"
+                        android:thumb="@drawable/custom_seekbar_thumb"
+                        android:minHeight="20dp"
+                        android:maxHeight="20dp"
+                        android:layout_marginBottom="16dp"/>
+
+                    <TextView android:id="@+id/tvPanelBlurLabel" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Размытие (Blur): 0%" android:textColor="#AAAAAA" android:textSize="12sp" android:layout_marginBottom="8dp"/>
+                    <SeekBar
+                        android:id="@+id/seekBarPanelBlur"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:max="100"
+                        android:progress="0"
+                        android:splitTrack="false"
+                        android:progressDrawable="@drawable/custom_seekbar_progress"
+                        android:thumb="@drawable/custom_seekbar_thumb"
+                        android:minHeight="20dp"
+                        android:maxHeight="20dp"
+                        android:layout_marginBottom="16dp"/>
+
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Цвет панелей (Удерживайте для настройки)" android:textColor="#AAAAAA" android:textSize="12sp" android:layout_marginBottom="8dp"/>
                     <HorizontalScrollView android:layout_width="match_parent" android:layout_height="wrap_content" android:scrollbars="none">
-                        <RadioGroup android:id="@+id/rgBgColor" android:layout_width="wrap_content" android:layout_height="wrap_content" android:orientation="horizontal">
-                            <RadioButton android:id="@+id/rbBgBlack" android:layout_width="24dp" android:layout_height="24dp" android:background="@drawable/bg_circle_shape" android:backgroundTint="#333333" android:button="@drawable/selector_radio_check" android:layout_marginEnd="16dp"/>
-                            <RadioButton android:id="@+id/rbBgGray" android:layout_width="24dp" android:layout_height="24dp" android:background="@drawable/bg_circle_shape" android:backgroundTint="#888888" android:button="@drawable/selector_radio_check" android:layout_marginEnd="16dp"/>
-                            <RadioButton android:id="@+id/rbBgDarkBlue" android:layout_width="24dp" android:layout_height="24dp" android:background="@drawable/bg_circle_shape" android:backgroundTint="#0D47A1" android:button="@drawable/selector_radio_check" android:layout_marginEnd="16dp"/>
-                            <RadioButton android:id="@+id/rbBgDarkRed" android:layout_width="24dp" android:layout_height="24dp" android:background="@drawable/bg_circle_shape" android:backgroundTint="#B71C1C" android:button="@drawable/selector_radio_check" android:layout_marginEnd="16dp"/>
-                            <RadioButton android:id="@+id/rbBgDarkGreen" android:layout_width="24dp" android:layout_height="24dp" android:background="@drawable/bg_circle_shape" android:backgroundTint="#1B5E20" android:button="@drawable/selector_radio_check" android:layout_marginEnd="16dp"/>
+                        <RadioGroup android:id="@+id/rgPanelColor" android:layout_width="wrap_content" android:layout_height="wrap_content" android:orientation="horizontal">
+                            <RadioButton android:id="@+id/rbPanel1" android:layout_width="32dp" android:layout_height="32dp" android:background="@drawable/bg_circle_shape" android:button="@null" android:foreground="@drawable/selector_check_center" android:gravity="center" android:layout_marginEnd="16dp"/>
+                            <RadioButton android:id="@+id/rbPanel2" android:layout_width="32dp" android:layout_height="32dp" android:background="@drawable/bg_circle_shape" android:button="@null" android:foreground="@drawable/selector_check_center" android:gravity="center" android:layout_marginEnd="16dp"/>
+                            <RadioButton android:id="@+id/rbPanel3" android:layout_width="32dp" android:layout_height="32dp" android:background="@drawable/bg_circle_shape" android:button="@null" android:foreground="@drawable/selector_check_center" android:gravity="center" android:layout_marginEnd="16dp"/>
+                            <RadioButton android:id="@+id/rbPanel4" android:layout_width="32dp" android:layout_height="32dp" android:background="@drawable/bg_circle_shape" android:button="@null" android:foreground="@drawable/selector_check_center" android:gravity="center" android:layout_marginEnd="16dp"/>
+                            <RadioButton android:id="@+id/rbPanel5" android:layout_width="32dp" android:layout_height="32dp" android:background="@drawable/bg_circle_shape" android:button="@null" android:foreground="@drawable/selector_check_center" android:gravity="center" android:layout_marginEnd="16dp"/>
                         </RadioGroup>
                     </HorizontalScrollView>
                 </LinearLayout>
+            </LinearLayout>
+
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:background="@drawable/bg_settings_card" android:layout_marginHorizontal="16dp" android:layout_marginBottom="12dp" android:padding="20dp">
+                <LinearLayout android:id="@+id/containerBgColor" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical">
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Цвет фона (Удерживайте для настройки)" android:textColor="#AAAAAA" android:textSize="14sp" android:layout_marginBottom="12dp"/>
+                    <HorizontalScrollView android:layout_width="match_parent" android:layout_height="wrap_content" android:scrollbars="none">
+                        <RadioGroup android:id="@+id/rgBgColor" android:layout_width="wrap_content" android:layout_height="wrap_content" android:orientation="horizontal">
+                            <RadioButton android:id="@+id/rbBg1" android:layout_width="32dp" android:layout_height="32dp" android:background="@drawable/bg_circle_shape" android:button="@null" android:foreground="@drawable/selector_check_center" android:gravity="center" android:layout_marginEnd="16dp"/>
+                            <RadioButton android:id="@+id/rbBg2" android:layout_width="32dp" android:layout_height="32dp" android:background="@drawable/bg_circle_shape" android:button="@null" android:foreground="@drawable/selector_check_center" android:gravity="center" android:layout_marginEnd="16dp"/>
+                            <RadioButton android:id="@+id/rbBg3" android:layout_width="32dp" android:layout_height="32dp" android:background="@drawable/bg_circle_shape" android:button="@null" android:foreground="@drawable/selector_check_center" android:gravity="center" android:layout_marginEnd="16dp"/>
+                            <RadioButton android:id="@+id/rbBg4" android:layout_width="32dp" android:layout_height="32dp" android:background="@drawable/bg_circle_shape" android:button="@null" android:foreground="@drawable/selector_check_center" android:gravity="center" android:layout_marginEnd="16dp"/>
+                            <RadioButton android:id="@+id/rbBg5" android:layout_width="32dp" android:layout_height="32dp" android:background="@drawable/bg_circle_shape" android:button="@null" android:foreground="@drawable/selector_check_center" android:gravity="center" android:layout_marginEnd="16dp"/>
+                        </RadioGroup>
+                    </HorizontalScrollView>
+                </LinearLayout>
+
                 <LinearLayout android:id="@+id/containerThemeColor" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:visibility="gone" android:layout_marginTop="20dp">
-                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Цвет выделения календаря" android:textColor="#AAAAAA" android:textSize="14sp" android:layout_marginBottom="12dp"/>
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Цвет календаря (Удерживайте для настройки)" android:textColor="#AAAAAA" android:textSize="14sp" android:layout_marginBottom="12dp"/>
                     <HorizontalScrollView android:layout_width="match_parent" android:layout_height="wrap_content" android:scrollbars="none">
                         <RadioGroup android:id="@+id/rgThemeColor" android:layout_width="wrap_content" android:layout_height="wrap_content" android:orientation="horizontal">
-                            <RadioButton android:id="@+id/rbColorBlue" android:layout_width="24dp" android:layout_height="24dp" android:background="@drawable/bg_circle_shape" android:backgroundTint="#448AFF" android:button="@drawable/selector_radio_check" android:layout_marginEnd="16dp"/>
-                            <RadioButton android:id="@+id/rbColorRed" android:layout_width="24dp" android:layout_height="24dp" android:background="@drawable/bg_circle_shape" android:backgroundTint="#FF5252" android:button="@drawable/selector_radio_check" android:layout_marginEnd="16dp"/>
-                            <RadioButton android:id="@+id/rbColorGreen" android:layout_width="24dp" android:layout_height="24dp" android:background="@drawable/bg_circle_shape" android:backgroundTint="#69F0AE" android:button="@drawable/selector_radio_check" android:layout_marginEnd="16dp"/>
-                            <RadioButton android:id="@+id/rbColorYellow" android:layout_width="24dp" android:layout_height="24dp" android:background="@drawable/bg_circle_shape" android:backgroundTint="#FFFF00" android:button="@drawable/selector_radio_check" android:layout_marginEnd="16dp"/>
-                            <RadioButton android:id="@+id/rbColorPurple" android:layout_width="24dp" android:layout_height="24dp" android:background="@drawable/bg_circle_shape" android:backgroundTint="#E040FB" android:button="@drawable/selector_radio_check" android:layout_marginEnd="16dp"/>
+                            <RadioButton android:id="@+id/rbTheme1" android:layout_width="32dp" android:layout_height="32dp" android:background="@drawable/bg_circle_shape" android:button="@null" android:foreground="@drawable/selector_check_center" android:gravity="center" android:layout_marginEnd="16dp"/>
+                            <RadioButton android:id="@+id/rbTheme2" android:layout_width="32dp" android:layout_height="32dp" android:background="@drawable/bg_circle_shape" android:button="@null" android:foreground="@drawable/selector_check_center" android:gravity="center" android:layout_marginEnd="16dp"/>
+                            <RadioButton android:id="@+id/rbTheme3" android:layout_width="32dp" android:layout_height="32dp" android:background="@drawable/bg_circle_shape" android:button="@null" android:foreground="@drawable/selector_check_center" android:gravity="center" android:layout_marginEnd="16dp"/>
+                            <RadioButton android:id="@+id/rbTheme4" android:layout_width="32dp" android:layout_height="32dp" android:background="@drawable/bg_circle_shape" android:button="@null" android:foreground="@drawable/selector_check_center" android:gravity="center" android:layout_marginEnd="16dp"/>
+                            <RadioButton android:id="@+id/rbTheme5" android:layout_width="32dp" android:layout_height="32dp" android:background="@drawable/bg_circle_shape" android:button="@null" android:foreground="@drawable/selector_check_center" android:gravity="center" android:layout_marginEnd="16dp"/>
                         </RadioGroup>
                     </HorizontalScrollView>
                 </LinearLayout>
@@ -183,8 +225,31 @@
                     <Button android:id="@+id/btnSelectBgImage" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="Выбрать фото" android:backgroundTint="#333333"/>
                     <Button android:id="@+id/btnResetBgImage" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Сброс" android:backgroundTint="#550000" android:layout_marginStart="8dp"/>
                 </LinearLayout>
-                <TextView android:id="@+id/tvAlphaLabel" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Прозрачность" android:textColor="#FFFFFF" android:textSize="14sp" android:layout_marginBottom="4dp"/>
-                <SeekBar android:id="@+id/seekBarAlpha" android:layout_width="match_parent" android:layout_height="wrap_content" android:max="255" android:progress="255" android:progressTint="@color/accent_blue" android:thumbTint="@color/accent_blue"/>
+
+                <Switch
+                    android:id="@+id/switchBgScaleFill"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Растягивать картинку"
+                    android:textColor="#FFFFFF"
+                    android:textSize="14sp"
+                    android:track="@drawable/custom_switch_track"
+                    android:thumb="@drawable/custom_switch_thumb"
+                    android:minHeight="32dp"
+                    android:layout_marginBottom="12dp"/>
+
+                <TextView android:id="@+id/tvAlphaLabel" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Прозрачность" android:textColor="#FFFFFF" android:textSize="14sp" android:layout_marginBottom="8dp"/>
+                <SeekBar
+                    android:id="@+id/seekBarAlpha"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:max="255"
+                    android:progress="255"
+                    android:splitTrack="false"
+                    android:progressDrawable="@drawable/custom_seekbar_progress"
+                    android:thumb="@drawable/custom_seekbar_thumb"
+                    android:minHeight="20dp"
+                    android:maxHeight="20dp"/>
             </LinearLayout>
 
             <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:background="@drawable/bg_settings_card" android:layout_marginHorizontal="16dp" android:layout_marginBottom="12dp" android:padding="20dp">
@@ -195,13 +260,25 @@
                     android:text="Адаптивная яркость"
                     android:textColor="@android:color/white"
                     android:textSize="16sp"
-                    android:thumbTint="@color/selector_switch_thumb"
-                    android:trackTint="@color/selector_switch_track"
-                    android:minHeight="48dp"/>
+                    android:track="@drawable/custom_switch_track"
+                    android:thumb="@drawable/custom_switch_thumb"
+                    android:minHeight="32dp"/>
+
                 <LinearLayout android:id="@+id/containerNightBrightness" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:paddingStart="8dp" android:visibility="gone">
-                    <TextView android:id="@+id/tvNightBrightnessValue" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Мин. яркость: 1%" android:textColor="#AAAAAA" android:textSize="12sp" android:layout_marginTop="4dp"/>
-                    <SeekBar android:id="@+id/seekBarNightBrightness" android:layout_width="match_parent" android:layout_height="wrap_content" android:max="100" android:progress="1" android:progressTint="@color/accent_blue" android:thumbTint="@color/accent_blue"/>
+                    <TextView android:id="@+id/tvNightBrightnessValue" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Мин. яркость: 1%" android:textColor="#AAAAAA" android:textSize="12sp" android:layout_marginTop="8dp"/>
+                    <SeekBar
+                        android:id="@+id/seekBarNightBrightness"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:max="100"
+                        android:progress="1"
+                        android:splitTrack="false"
+                        android:progressDrawable="@drawable/custom_seekbar_progress"
+                        android:thumb="@drawable/custom_seekbar_thumb"
+                        android:minHeight="20dp"
+                        android:maxHeight="20dp"/>
                 </LinearLayout>
+
                 <LinearLayout android:id="@+id/containerRedTint" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:visibility="gone">
                     <Switch
                         android:id="@+id/switchRedTint"
@@ -211,11 +288,12 @@
                         android:textColor="#DDDDDD"
                         android:textSize="14sp"
                         android:paddingStart="8dp"
-                        android:thumbTint="@color/selector_switch_thumb"
-                        android:trackTint="@color/selector_switch_track"
-                        android:minHeight="40dp"/>
+                        android:track="@drawable/custom_switch_track"
+                        android:thumb="@drawable/custom_switch_thumb"
+                        android:minHeight="32dp"/>
                 </LinearLayout>
-                <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#333333" android:layout_marginVertical="8dp"/>
+                <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#333333" android:layout_marginVertical="12dp"/>
+
                 <Switch
                     android:id="@+id/switchAutoLocation"
                     android:layout_width="match_parent"
@@ -223,10 +301,12 @@
                     android:text="Авто-определение места"
                     android:textColor="@android:color/white"
                     android:textSize="16sp"
-                    android:thumbTint="@color/selector_switch_thumb"
-                    android:trackTint="@color/selector_switch_track"
-                    android:minHeight="48dp"/>
-                <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#333333" android:layout_marginVertical="8dp"/>
+                    android:track="@drawable/custom_switch_track"
+                    android:thumb="@drawable/custom_switch_thumb"
+                    android:minHeight="32dp"/>
+
+                <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#333333" android:layout_marginVertical="12dp"/>
+
                 <Switch
                     android:id="@+id/switchShowBattery"
                     android:layout_width="match_parent"
@@ -234,19 +314,14 @@
                     android:text="Показывать заряд"
                     android:textColor="@android:color/white"
                     android:textSize="16sp"
-                    android:thumbTint="@color/selector_switch_thumb"
-                    android:trackTint="@color/selector_switch_track"
-                    android:minHeight="48dp"/>
+                    android:track="@drawable/custom_switch_track"
+                    android:thumb="@drawable/custom_switch_thumb"
+                    android:minHeight="32dp"/>
             </LinearLayout>
 
             <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:background="@drawable/bg_settings_card" android:layout_marginHorizontal="16dp" android:layout_marginBottom="12dp" android:padding="20dp">
                 <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Погода API (Yandex)" android:textColor="#AAAAAA" android:textSize="14sp"/>
-                <EditText android:id="@+id/etApiKey" android:layout_width="match_parent" android:layout_height="wrap_content" android:backgroundTint="#555555" android:textColor="@android:color/white" android:hint="Ключ" android:textColorHint="#555555" android:inputType="text" android:textSize="14sp" android:maxLines="1" android:layout_marginBottom="16dp"/>
-                <TextView android:id="@+id/tvFontLabel" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Шрифт: Стандартный" android:textColor="#AAAAAA" android:textSize="14sp" android:layout_marginBottom="8dp"/>
-                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal">
-                    <Button android:id="@+id/btnSelectFont" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="Выбрать" android:backgroundTint="#333333"/>
-                    <Button android:id="@+id/btnResetFont" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Сброс" android:backgroundTint="#333333" android:layout_marginStart="8dp"/>
-                </LinearLayout>
+                <EditText android:id="@+id/etApiKey" android:layout_width="match_parent" android:layout_height="wrap_content" android:backgroundTint="#555555" android:textColor="@android:color/white" android:hint="Ключ" android:textColorHint="#555555" android:inputType="text" android:textSize="14sp" android:maxLines="1" android:layout_marginBottom="8dp"/>
             </LinearLayout>
 
             <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:background="@drawable/bg_settings_card" android:layout_marginHorizontal="16dp" android:layout_marginBottom="24dp" android:padding="20dp">
@@ -258,9 +333,9 @@
                     android:textColor="@color/accent_blue"
                     android:textStyle="bold"
                     android:textSize="16sp"
-                    android:thumbTint="@color/selector_switch_thumb"
-                    android:trackTint="@color/selector_switch_track"
-                    android:minHeight="48dp"/>
+                    android:track="@drawable/custom_switch_track"
+                    android:thumb="@drawable/custom_switch_thumb"
+                    android:minHeight="32dp"/>
                 <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Приложение запустится при подключении кабеля." android:textColor="#888888" android:textSize="12sp" android:layout_marginTop="4dp"/>
             </LinearLayout>
 

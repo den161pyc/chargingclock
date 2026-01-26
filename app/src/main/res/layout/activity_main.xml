@@ -6,208 +6,107 @@
     android:id="@+id/rootLayout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@android:color/black"
+    android:fitsSystemWindows="false"
+    android:background="#000000"
     tools:context=".MainActivity">
 
-    <ImageView
-        android:id="@+id/ivBackground"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:scaleType="centerCrop"
-        android:visibility="gone"
-        tools:visibility="visible"
+    <ImageView android:id="@+id/ivBackground" android:layout_width="0dp" android:layout_height="0dp" android:scaleType="centerCrop" android:visibility="gone" app:layout_constraintBottom_toBottomOf="parent" app:layout_constraintEnd_toEndOf="parent" app:layout_constraintStart_toStartOf="parent" app:layout_constraintTop_toTopOf="parent"/>
+    <ImageView android:id="@+id/ivBlurLeft" android:layout_width="0dp" android:layout_height="0dp" android:scaleType="matrix" android:visibility="gone" app:layout_constraintBottom_toBottomOf="@id/viewBgLeft" app:layout_constraintEnd_toEndOf="@id/viewBgLeft" app:layout_constraintStart_toStartOf="@id/viewBgLeft" app:layout_constraintTop_toTopOf="@id/viewBgLeft" />
+    <View android:id="@+id/viewBgLeft" android:layout_width="0dp" android:layout_height="0dp" android:background="@drawable/bg_panel_rounded" android:visibility="gone" app:layout_constraintBottom_toBottomOf="parent" app:layout_constraintEnd_toStartOf="@+id/guidelineVertical" app:layout_constraintStart_toStartOf="parent" app:layout_constraintTop_toTopOf="parent" android:layout_margin="16dp"/>
+    <ImageView android:id="@+id/ivBlurRight" android:layout_width="0dp" android:layout_height="0dp" android:scaleType="matrix" android:visibility="gone" app:layout_constraintBottom_toBottomOf="@id/viewBgRight" app:layout_constraintEnd_toEndOf="@id/viewBgRight" app:layout_constraintStart_toStartOf="@id/viewBgRight" app:layout_constraintTop_toTopOf="@id/viewBgRight" />
+    <View android:id="@+id/viewBgRight" android:layout_width="0dp" android:layout_height="0dp" android:background="@drawable/bg_panel_rounded" android:visibility="gone" app:layout_constraintBottom_toBottomOf="parent" app:layout_constraintEnd_toEndOf="parent" app:layout_constraintStart_toEndOf="@+id/guidelineVertical" app:layout_constraintTop_toTopOf="parent" android:layout_margin="16dp"/>
+    <androidx.constraintlayout.widget.Guideline android:id="@+id/guidelineVertical" android:layout_width="wrap_content" android:layout_height="wrap_content" android:orientation="vertical" app:layout_constraintGuide_percent="0.5"/>
+    <LinearLayout android:id="@+id/clockContainer" android:layout_width="0dp" android:layout_height="wrap_content" android:orientation="vertical" android:gravity="center" app:layout_constraintBottom_toBottomOf="parent" app:layout_constraintEnd_toStartOf="@+id/guidelineVertical" app:layout_constraintStart_toStartOf="parent" app:layout_constraintTop_toTopOf="parent"> <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical"> <TextSwitcher android:id="@+id/tsHour1" android:layout_width="wrap_content" android:layout_height="wrap_content"/> <TextSwitcher android:id="@+id/tsHour2" android:layout_width="wrap_content" android:layout_height="wrap_content"/> <TextView android:id="@+id/tvSeparator" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text=":" android:textSize="100sp" android:textColor="#FFFFFF" android:includeFontPadding="false" android:layout_marginHorizontal="4dp"/> <TextSwitcher android:id="@+id/tsMinute1" android:layout_width="wrap_content" android:layout_height="wrap_content"/> <TextSwitcher android:id="@+id/tsMinute2" android:layout_width="wrap_content" android:layout_height="wrap_content"/> </LinearLayout> <TextClock android:id="@+id/textDateSmall" android:layout_width="wrap_content" android:layout_height="wrap_content" android:format12Hour="EEEE, d MMMM" android:format24Hour="EEEE, d MMMM" android:textColor="#FFFFFF" android:textSize="24sp" android:layout_marginTop="8dp" android:visibility="gone"/> </LinearLayout>
+
+    <FrameLayout
+        android:id="@+id/containerSide"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintStart_toEndOf="@+id/guidelineVertical"
+        app:layout_constraintTop_toTopOf="parent"
+        android:padding="32dp">
 
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:orientation="horizontal"
-        android:baselineAligned="false">
-
-        <FrameLayout
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1">
-
-            <LinearLayout
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:layout_gravity="center"
-                android:gravity="center">
-
-                <LinearLayout
-                    android:id="@+id/clockContainer"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center">
-                    <TextSwitcher android:id="@+id/tsHour1" android:layout_width="wrap_content" android:layout_height="wrap_content" />
-                    <TextSwitcher android:id="@+id/tsHour2" android:layout_width="wrap_content" android:layout_height="wrap_content" />
-                    <TextView android:id="@+id/tvSeparator" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text=":" android:includeFontPadding="false" android:gravity="center" android:layout_marginBottom="8dp"/>
-                    <TextSwitcher android:id="@+id/tsMinute1" android:layout_width="wrap_content" android:layout_height="wrap_content" />
-                    <TextSwitcher android:id="@+id/tsMinute2" android:layout_width="wrap_content" android:layout_height="wrap_content" />
-                </LinearLayout>
-
-                <TextClock
-                    android:id="@+id/textDateSmall"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:format12Hour="EEE, d MMM"
-                    android:format24Hour="EEE, d MMM"
-                    android:textColor="#AAAAAA"
-                    android:textSize="24sp"/>
+        <LinearLayout android:id="@+id/dateInfoLayout" android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical" android:gravity="center" android:visibility="gone">
+            <TextView android:id="@+id/textDateLarge" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Дата" android:textColor="#FFFFFF" android:textSize="36sp" android:textStyle="bold" android:gravity="center"/>
+            <LinearLayout android:id="@+id/alarmContainer" android:layout_width="wrap_content" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical" android:layout_marginTop="24dp" android:background="@drawable/bg_panel_rounded" android:backgroundTint="#33FFFFFF" android:paddingHorizontal="16dp" android:paddingVertical="8dp" android:visibility="gone">
+                <ImageView android:id="@+id/ivAlarmIcon" android:layout_width="24dp" android:layout_height="24dp" android:src="@drawable/ic_alarm" app:tint="#FFFFFF"/>
+                <TextView android:id="@+id/tvNextAlarmTime" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="07:00" android:textColor="#FFFFFF" android:textSize="20sp" android:layout_marginStart="8dp"/>
             </LinearLayout>
-        </FrameLayout>
+            <TextView android:id="@+id/tvMiniWeather" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="+2°C" android:textColor="#DDDDDD" android:textSize="18sp" android:layout_marginTop="16dp" android:visibility="gone"/>
+        </LinearLayout>
 
-        <FrameLayout
-            android:id="@+id/containerSide"
-            android:layout_width="0dp"
+        <LinearLayout
+            android:id="@+id/calendarLayout"
+            android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center"
             android:visibility="gone">
 
-            <TextClock
-                android:id="@+id/textDateLarge"
+            <TextView
+                android:id="@+id/tvMonthName"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_gravity="center"
-                android:format12Hour="d MMMM\nEEEE"
-                android:format24Hour="d MMMM\nEEEE"
-                android:textColor="@android:color/white"
-                android:textSize="60sp"
-                android:gravity="center"
-                android:fontFamily="sans-serif-light"/>
+                android:text="Январь 2026"
+                android:textColor="#FFFFFF"
+                android:textSize="28sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="16dp"/>
 
             <LinearLayout
-                android:id="@+id/calendarLayout"
+                android:id="@+id/calendarHeader"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:gravity="center"
-                android:layout_gravity="center"
-                android:visibility="gone"
-                android:padding="8dp"
-                android:background="?attr/selectableItemBackground">
-                <CalendarView
-                    android:id="@+id/calendarView"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="center"
-                    android:clickable="false"
-                    android:focusable="false"/>
-                <TextView
-                    android:id="@+id/tvEvent"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text=""
-                    android:textColor="#AAAAAA"
-                    android:textSize="16sp"
-                    android:gravity="center"
-                    android:layout_marginTop="8dp"
-                    android:visibility="gone"/>
+                android:orientation="horizontal"
+                android:layout_marginBottom="8dp">
             </LinearLayout>
 
-            <LinearLayout
-                android:id="@+id/weatherLayout"
+            <GridLayout
+                android:id="@+id/calendarGrid"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:columnCount="7"
+                android:alignmentMode="alignBounds">
+            </GridLayout>
+
+            <TextView
+                android:id="@+id/tvEvent"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:gravity="start|center_vertical"
-                android:layout_gravity="center_vertical"
-                android:paddingStart="48dp"
-                android:visibility="gone">
-
-                <TextView
-                    android:id="@+id/tvLocation"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Загрузка..."
-                    android:textColor="@android:color/white"
-                    android:textSize="28sp"
-                    android:textStyle="bold"
-                    android:layout_marginBottom="0dp"/>
-
-                <TextView
-                    android:id="@+id/tvWeatherTemp"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="--°"
-                    android:textColor="@android:color/white"
-                    android:textSize="110sp"
-                    android:textStyle="bold"
-                    android:includeFontPadding="false"
-                    android:layout_marginStart="-4dp"/>
-
-                <TextView
-                    android:id="@+id/tvWeatherIcon"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text=""
-                    android:textSize="32sp"
-                    android:layout_marginTop="8dp"/>
-
-                <TextView
-                    android:id="@+id/tvWeatherCondition"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="..."
-                    android:textColor="@android:color/white"
-                    android:textSize="22sp"
-                    android:textStyle="bold"
-                    android:layout_marginTop="4dp"/>
-            </LinearLayout>
-
-            <LinearLayout
-                android:id="@+id/musicLayout"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:orientation="vertical"
+                android:text="Нет событий"
+                android:textColor="#FFFFFF"
+                android:textSize="16sp"
                 android:gravity="center"
-                android:padding="16dp"
-                android:visibility="gone">
-                <androidx.cardview.widget.CardView android:layout_width="160dp" android:layout_height="160dp" app:cardCornerRadius="16dp" app:cardElevation="0dp" android:layout_marginBottom="12dp" app:cardBackgroundColor="@android:color/transparent">
-                    <ImageView android:id="@+id/ivAlbumArt" android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="centerCrop" android:background="#333333" android:src="@android:drawable/ic_menu_gallery"/>
-                </androidx.cardview.widget.CardView>
-                <TextView android:id="@+id/tvTrackTitle" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Нет музыки" android:textColor="@android:color/white" android:textSize="20sp" android:textStyle="bold" android:gravity="center" android:singleLine="true" android:ellipsize="marquee" android:marqueeRepeatLimit="marquee_forever"/>
-                <TextView android:id="@+id/tvTrackArtist" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Ожидание..." android:textColor="#AAAAAA" android:textSize="14sp" android:gravity="center" android:singleLine="true" android:layout_marginBottom="12dp"/>
-                <SeekBar android:id="@+id/seekBarMusic" android:layout_width="match_parent" android:layout_height="wrap_content" android:progressTint="@android:color/white" android:thumbTint="@android:color/white" android:layout_marginBottom="12dp"/>
-                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center">
-                    <ImageButton android:id="@+id/btnPrev" android:layout_width="56dp" android:layout_height="56dp" android:src="@android:drawable/ic_media_previous" android:background="?attr/selectableItemBackgroundBorderless" app:tint="@android:color/white" android:scaleType="fitCenter" android:padding="12dp"/>
-                    <ImageButton android:id="@+id/btnPlayPause" android:layout_width="72dp" android:layout_height="72dp" android:src="@android:drawable/ic_media_play" android:background="?attr/selectableItemBackgroundBorderless" app:tint="@android:color/white" android:scaleType="fitCenter" android:padding="10dp" android:layout_marginHorizontal="20dp"/>
-                    <ImageButton android:id="@+id/btnNext" android:layout_width="56dp" android:layout_height="56dp" android:src="@android:drawable/ic_media_next" android:background="?attr/selectableItemBackgroundBorderless" app:tint="@android:color/white" android:scaleType="fitCenter" android:padding="12dp"/>
-                </LinearLayout>
+                android:layout_marginTop="24dp"/>
+        </LinearLayout>
+
+        <LinearLayout android:id="@+id/weatherLayout" android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical" android:gravity="center" android:visibility="gone">
+            <TextView android:id="@+id/tvLocation" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Город" android:textColor="#FFFFFF" android:textSize="24sp" android:layout_marginBottom="16dp"/>
+            <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical">
+                <TextView android:id="@+id/tvWeatherIcon" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="☁️" android:textSize="64sp" android:layout_marginEnd="16dp"/>
+                <TextView android:id="@+id/tvWeatherTemp" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="+2°C" android:textColor="#FFFFFF" android:textSize="64sp" android:textStyle="bold"/>
             </LinearLayout>
+            <TextView android:id="@+id/tvWeatherCondition" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Облачно" android:textColor="#DDDDDD" android:textSize="24sp" android:layout_marginTop="8dp"/>
+        </LinearLayout>
 
-        </FrameLayout>
-    </LinearLayout>
+        <LinearLayout android:id="@+id/musicLayout" android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical" android:gravity="center" android:visibility="gone">
+            <androidx.cardview.widget.CardView android:layout_width="180dp" android:layout_height="180dp" app:cardCornerRadius="16dp" app:cardElevation="8dp" android:layout_marginBottom="24dp">
+                <ImageView android:id="@+id/ivAlbumArt" android:layout_width="match_parent" android:layout_height="match_parent" android:src="@drawable/ic_music_note" android:scaleType="centerCrop" android:background="#333333"/>
+            </androidx.cardview.widget.CardView>
+            <TextView android:id="@+id/tvTrackTitle" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Нет музыки" android:textColor="#FFFFFF" android:textSize="22sp" android:textStyle="bold" android:gravity="center" android:singleLine="true" android:ellipsize="marquee" android:marqueeRepeatLimit="marquee_forever"/>
+            <TextView android:id="@+id/tvTrackArtist" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Плеер" android:textColor="#AAAAAA" android:textSize="16sp" android:gravity="center" android:layout_marginTop="4dp" android:singleLine="true"/>
+            <SeekBar android:id="@+id/seekBarMusic" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="24dp" android:progressTint="#FFFFFF" android:thumbTint="#FFFFFF"/>
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center" android:layout_marginTop="16dp">
+                <ImageButton android:id="@+id/btnPrev" android:layout_width="64dp" android:layout_height="64dp" android:src="@drawable/ic_skip_previous" android:background="?attr/selectableItemBackgroundBorderless" android:scaleType="fitCenter" android:padding="12dp" app:tint="#FFFFFF"/>
+                <ImageButton android:id="@+id/btnPlayPause" android:layout_width="80dp" android:layout_height="80dp" android:src="@drawable/ic_play" android:background="?attr/selectableItemBackgroundBorderless" android:scaleType="fitCenter" android:padding="12dp" android:layout_marginHorizontal="24dp" app:tint="#FFFFFF"/>
+                <ImageButton android:id="@+id/btnNext" android:layout_width="64dp" android:layout_height="64dp" android:src="@drawable/ic_skip_next" android:background="?attr/selectableItemBackgroundBorderless" android:scaleType="fitCenter" android:padding="12dp" app:tint="#FFFFFF"/>
+            </LinearLayout>
+        </LinearLayout>
+    </FrameLayout>
 
-    <TextView
-        android:id="@+id/batteryStatus"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Charging..."
-        android:textColor="#00FF00"
-        android:textSize="18sp"
-        android:layout_marginBottom="16dp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintRight_toRightOf="parent" />
-
-    <ImageButton
-        android:id="@+id/btnSettings"
-        android:layout_width="48dp"
-        android:layout_height="48dp"
-        android:src="@android:drawable/ic_menu_preferences"
-        android:background="?attr/selectableItemBackgroundBorderless"
-        android:contentDescription="Settings"
-        android:layout_marginTop="16dp"
-        android:layout_marginEnd="16dp"
-        app:tint="#888888"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+    <TextView android:id="@+id/batteryStatus" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Заряжается" android:textColor="#00FF00" android:textSize="18sp" android:layout_marginTop="24dp" android:layout_marginStart="24dp" app:layout_constraintStart_toStartOf="parent" app:layout_constraintTop_toTopOf="parent"/>
+    <ImageButton android:id="@+id/btnSettings" android:layout_width="48dp" android:layout_height="48dp" android:src="@drawable/ic_settings" android:background="?attr/selectableItemBackgroundBorderless" app:tint="#88FFFFFF" android:layout_marginTop="16dp" android:layout_marginEnd="16dp" app:layout_constraintTop_toTopOf="parent" app:layout_constraintEnd_toEndOf="parent"/>
 
 </androidx.constraintlayout.widget.ConstraintLayout>
