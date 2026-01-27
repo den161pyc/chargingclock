@@ -53,6 +53,7 @@ import android.view.ViewGroup
 import android.view.ViewOutlineProvider
 import android.view.WindowManager
 import android.view.animation.AnimationUtils
+import android.widget.CalendarView
 import android.widget.FrameLayout
 import android.widget.GridLayout
 import android.widget.ImageButton
@@ -77,7 +78,7 @@ import java.io.FileDescriptor
 import java.net.HttpURLConnection
 import java.net.URL
 import java.text.SimpleDateFormat
-import java.util.Calendar // Используем Calendar
+import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 import kotlin.math.max
@@ -85,7 +86,11 @@ import kotlin.math.min
 
 class MainActivity : AppCompatActivity(), SensorEventListener {
 
-    // Removed theme/text color tracking for recreate() - now we update dynamically
+    // Переменные состояния
+    private var currentThemeId = 0
+    private var currentTextColorValue = 0
+    private var currentThemeColorValue = 0
+
     private var lat = "55.75"
     private var lon = "37.62"
 
@@ -116,7 +121,7 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
     private lateinit var tvNextAlarmTime: TextView
     private lateinit var tvMiniWeather: TextView
 
-    // Custom Calendar Elements
+    // Элементы календаря
     private lateinit var calendarLayout: LinearLayout
     private lateinit var tvMonthName: TextView
     private lateinit var calendarHeader: LinearLayout
@@ -139,7 +144,7 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
     private lateinit var btnNext: ImageButton
 
     private var mediaSessionManager: MediaSessionManager? = null
-    private var currentController: MediaController? = null
+
     private var isTrackingTouch = false
     private lateinit var sensorManager: SensorManager
     private var lightSensor: Sensor? = null
@@ -151,7 +156,6 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
     private var brightnessAnimator: ValueAnimator? = null
     private val handler = Handler(Looper.getMainLooper())
 
-    // Globals for calendar colors to support red tint mode
     private var globalTextColor = Color.WHITE
     private var globalThemeColor = Color.BLUE
 
@@ -165,7 +169,9 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
     private val musicProgressRunnable = object : Runnable {
         override fun run() {
             updateMusicProgress()
-            if (currentController?.playbackState?.state == PlaybackState.STATE_PLAYING) { handler.postDelayed(this, 1000) }
+            if (MusicService.currentController?.playbackState?.state == PlaybackState.STATE_PLAYING) {
+                handler.postDelayed(this, 1000)
+            }
         }
     }
 
@@ -173,7 +179,6 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         override fun onReceive(context: Context?, intent: Intent?) {
             updateClockTime()
             updateNextAlarm()
-            // Update calendar daily (to move the circle)
             drawCustomCalendar(globalTextColor, globalThemeColor)
         }
     }
@@ -182,9 +187,14 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         override fun onReceive(context: Context?, intent: Intent?) {
             when (intent?.action) {
                 Intent.ACTION_POWER_CONNECTED -> { batteryStatusText.text = "Заряжается"; updateBatteryColor() }
-                Intent.ACTION_POWER_DISCONNECTED -> { batteryStatusText.text = "Работа от батареи"; batteryStatusText.setTextColor(Color.RED);
+                Intent.ACTION_POWER_DISCONNECTED -> {
+                    batteryStatusText.text = "Работа от батареи"
+                    batteryStatusText.setTextColor(Color.RED)
                     val prefs = getSharedPreferences("AppConfig", Context.MODE_PRIVATE)
-                    if (prefs.getBoolean("BG_MODE_ENABLED", false)) finishAffinity()
+                    // Используем this@MainActivity чтобы вызвать метод Activity, а не переопределять его
+                    if (prefs.getBoolean("BG_MODE_ENABLED", false)) {
+                        this@MainActivity.finishAffinity()
+                    }
                 }
             }
         }
@@ -208,9 +218,9 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
             window.addFlags(WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON or WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         }
 
-        // Theme setting no longer critical for calendar but kept for general style
         val prefs = getSharedPreferences("AppConfig", Context.MODE_PRIVATE)
-        setTheme(getThemeResId(prefs.getInt("THEME_COLOR_ID", 0)))
+        currentThemeId = prefs.getInt("THEME_COLOR_ID", 0)
+        setTheme(getThemeResId(currentThemeId))
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) { window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON) }
 
@@ -246,7 +256,6 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         tvNextAlarmTime = findViewById(R.id.tvNextAlarmTime)
         tvMiniWeather = findViewById(R.id.tvMiniWeather)
 
-        // Custom Calendar
         calendarLayout = findViewById(R.id.calendarLayout)
         tvMonthName = findViewById(R.id.tvMonthName)
         calendarHeader = findViewById(R.id.calendarHeader)
@@ -268,21 +277,55 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         btnNext = findViewById(R.id.btnNext)
 
         mediaSessionManager = getSystemService(Context.MEDIA_SESSION_SERVICE) as MediaSessionManager
-        btnPrev.setOnClickListener { currentController?.transportControls?.skipToPrevious() }
-        btnNext.setOnClickListener { currentController?.transportControls?.skipToNext() }
-        btnPlayPause.setOnClickListener {
-            val state = currentController?.playbackState?.state
-            if (state == PlaybackState.STATE_PLAYING) { currentController?.transportControls?.pause() } else { currentController?.transportControls?.play() }
+
+        btnPrev.setOnClickListener {
+            val controller = MusicService.currentController
+            if (controller != null) {
+                controller.transportControls?.skipToPrevious()
+            } else {
+                MusicService.instance?.refreshControllers()
+                Toast.makeText(this, "Плеер не найден", Toast.LENGTH_SHORT).show()
+            }
         }
+
+        btnNext.setOnClickListener {
+            val controller = MusicService.currentController
+            if (controller != null) {
+                controller.transportControls?.skipToNext()
+            } else {
+                MusicService.instance?.refreshControllers()
+                Toast.makeText(this, "Плеер не найден", Toast.LENGTH_SHORT).show()
+            }
+        }
+
+        btnPlayPause.setOnClickListener {
+            val controller = MusicService.currentController
+            if (controller != null) {
+                val state = controller.playbackState?.state
+                if (state == PlaybackState.STATE_PLAYING) {
+                    controller.transportControls?.pause()
+                } else {
+                    controller.transportControls?.play()
+                }
+            } else {
+                MusicService.instance?.refreshControllers()
+                Toast.makeText(this, "Плеер не найден. Запустите музыку.", Toast.LENGTH_SHORT).show()
+            }
+        }
+
         seekBarMusic.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {}
             override fun onStartTrackingTouch(seekBar: SeekBar?) { isTrackingTouch = true }
             override fun onStopTrackingTouch(seekBar: SeekBar?) {
                 isTrackingTouch = false
-                currentController?.transportControls?.seekTo(seekBar?.progress?.toLong() ?: 0L)
-                updateMusicProgress()
+                val controller = MusicService.currentController
+                if (controller != null) {
+                    controller.transportControls?.seekTo(seekBar?.progress?.toLong() ?: 0L)
+                    updateMusicProgress()
+                }
             }
         })
+
         sensorManager = getSystemService(Context.SENSOR_SERVICE) as SensorManager
         lightSensor = sensorManager.getDefaultSensor(Sensor.TYPE_LIGHT)
         locationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
@@ -316,12 +359,39 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
     override fun onResume() {
         super.onResume()
         hideSystemUI()
+
         val timeFilter = IntentFilter().apply { addAction(Intent.ACTION_TIME_TICK); addAction(Intent.ACTION_TIME_CHANGED); addAction(Intent.ACTION_TIMEZONE_CHANGED) }
         registerReceiver(timeTickReceiver, timeFilter)
 
         val prefs = getSharedPreferences("AppConfig", Context.MODE_PRIVATE)
-        isNightModeActive = false
 
+        val newThemeId = prefs.getInt("THEME_COLOR_ID", 0)
+        val textColorId = prefs.getInt("TEXT_COLOR_ID", 0)
+        val defaultTextColors = intArrayOf(Color.WHITE, Color.GREEN, Color.CYAN, Color.YELLOW, Color.RED)
+        val defaultTextColor = defaultTextColors.getOrElse(textColorId) { Color.WHITE }
+        val newTextColorValue = prefs.getInt("TEXT_COLOR_VALUE_$textColorId", defaultTextColor)
+
+        val themeColorId = prefs.getInt("THEME_COLOR_ID", 0)
+        val defaultThemeColors = intArrayOf(Color.parseColor("#448AFF"), Color.parseColor("#FF5252"), Color.parseColor("#69F0AE"), Color.parseColor("#FFFF00"), Color.parseColor("#E040FB"))
+        val defaultThemeColor = defaultThemeColors.getOrElse(themeColorId) { Color.parseColor("#448AFF") }
+        val newThemeColorValue = prefs.getInt("THEME_COLOR_VALUE_$themeColorId", defaultThemeColor)
+
+        if (newThemeId != currentThemeId ||
+            (currentTextColorValue != 0 && newTextColorValue != currentTextColorValue) ||
+            (currentThemeColorValue != 0 && newThemeColorValue != currentThemeColorValue)) {
+
+            currentThemeId = newThemeId
+            currentTextColorValue = newTextColorValue
+            currentThemeColorValue = newThemeColorValue
+            recreate()
+            return
+        }
+
+        currentThemeId = newThemeId
+        currentTextColorValue = newTextColorValue
+        currentThemeColorValue = newThemeColorValue
+
+        isNightModeActive = false
         applyAppearance(prefs)
 
         isAutoBrightnessEnabled = prefs.getBoolean("AUTO_BRIGHTNESS", false)
@@ -385,14 +455,17 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
                 }
                 1 -> {
                     calendarLayout.visibility = View.VISIBLE
-                    val showEvents = prefs.getBoolean("SHOW_CALENDAR_EVENTS", false)
-                    calendarLayout.setOnClickListener {
-                        val builder = CalendarContract.CONTENT_URI.buildUpon().appendPath("time"); ContentUris.appendId(builder, System.currentTimeMillis()); val intent = Intent(Intent.ACTION_VIEW).setData(builder.build()); try { startActivity(intent) } catch (e: Exception) {}
-                    }
-                    if (showEvents) checkCalendarPermission() else tvEvent.visibility = View.GONE
                 }
                 2 -> { weatherLayout.visibility = View.VISIBLE; weatherUpdateRunnable.run() }
-                3 -> { musicLayout.visibility = View.VISIBLE; checkNotificationPermission(); bindMusicService(); handler.post(musicProgressRunnable) }
+                3 -> {
+                    musicLayout.visibility = View.VISIBLE
+                    if (checkNotificationPermission()) {
+                        MusicService.updateUI = { controller -> updateMusicUI(controller) }
+                        MusicService.instance?.refreshControllers()
+                        updateMusicUI(MusicService.currentController)
+                        handler.post(musicProgressRunnable)
+                    }
+                }
             }
         } else {
             containerSide.visibility = View.GONE
@@ -400,6 +473,89 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
             if (showDate) { textDateSmall.visibility = View.VISIBLE; setClockSize(200f) } else { textDateSmall.visibility = View.GONE; setClockSize(250f) }
         }
         updateClockTime()
+    }
+
+    override fun onPause() {
+        super.onPause()
+        try { unregisterReceiver(timeTickReceiver) } catch (e: Exception) {}
+
+        sensorManager.unregisterListener(this)
+        handler.removeCallbacks(weatherUpdateRunnable)
+        handler.removeCallbacks(musicProgressRunnable)
+
+        MusicService.updateUI = null
+
+        brightnessAnimator?.cancel()
+    }
+
+    private fun checkNotificationPermission(): Boolean {
+        val enabledListeners = Settings.Secure.getString(contentResolver, "enabled_notification_listeners")
+        if (enabledListeners == null || !enabledListeners.contains(packageName)) {
+            Toast.makeText(this, "Music access required", Toast.LENGTH_LONG).show()
+            startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
+            return false
+        }
+        return true
+    }
+
+    private fun updateMusicUI(controller: MediaController?) {
+        if (controller == null) {
+            tvTrackTitle.text = "Play Music"
+            tvTrackArtist.text = "Waiting..."
+            seekBarMusic.progress = 0
+            seekBarMusic.max = 100
+            ivAlbumArt.setImageResource(R.drawable.ic_music_note)
+            return
+        }
+
+        val metadata = controller.metadata
+        val playbackState = controller.playbackState
+        val title = metadata?.getString(MediaMetadata.METADATA_KEY_TITLE) ?: "Track"
+        val artist = metadata?.getString(MediaMetadata.METADATA_KEY_ARTIST) ?: "Artist"
+        val bitmap = metadata?.getBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART) ?: metadata?.getBitmap(MediaMetadata.METADATA_KEY_ART)
+
+        tvTrackTitle.text = title
+        tvTrackArtist.text = artist
+
+        if (bitmap != null) {
+            ivAlbumArt.setImageBitmap(bitmap)
+        } else {
+            try { ivAlbumArt.setImageResource(R.drawable.ic_music_note) } catch (e: Exception) {}
+        }
+
+        if (playbackState?.state == PlaybackState.STATE_PLAYING) {
+            btnPlayPause.setImageResource(android.R.drawable.ic_media_pause)
+            handler.removeCallbacks(musicProgressRunnable)
+            handler.post(musicProgressRunnable)
+        } else {
+            btnPlayPause.setImageResource(android.R.drawable.ic_media_play)
+            handler.removeCallbacks(musicProgressRunnable)
+        }
+
+        val duration = metadata?.getLong(MediaMetadata.METADATA_KEY_DURATION) ?: 0L
+        if (duration > 0) seekBarMusic.max = duration.toInt()
+        updateMusicProgress()
+    }
+
+    private fun updateMusicProgress() {
+        val controller = MusicService.currentController
+        if (!isTrackingTouch && controller != null) {
+            val playbackState = controller.playbackState
+            if (playbackState != null) {
+                var currentPos = playbackState.position
+                if (playbackState.state == PlaybackState.STATE_PLAYING) {
+                    val lastUpdateTime = playbackState.lastPositionUpdateTime
+                    if (lastUpdateTime > 0) {
+                        val timeDelta = SystemClock.elapsedRealtime() - lastUpdateTime
+                        val speed = playbackState.playbackSpeed
+                        currentPos += (timeDelta * speed).toLong()
+                    }
+                }
+                if (currentPos > seekBarMusic.max) currentPos = seekBarMusic.max.toLong()
+                if (currentPos < 0) currentPos = 0
+                seekBarMusic.progress = currentPos.toInt()
+            }
+        }
     }
 
     private fun updateLayoutConstraints(isSplit: Boolean) {
@@ -415,8 +571,6 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         }
         constraintSet.applyTo(rootLayout)
     }
-
-    override fun onPause() { super.onPause(); unregisterReceiver(timeTickReceiver); sensorManager.unregisterListener(this); handler.removeCallbacks(weatherUpdateRunnable); handler.removeCallbacks(musicProgressRunnable); currentController?.unregisterCallback(mediaCallback); brightnessAnimator?.cancel() }
 
     private fun updateClockTime() {
         val format = if (DateFormat.is24HourFormat(this)) "HH:mm" else "hh:mm"
@@ -439,53 +593,44 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
             textDateLarge.text = dateStr
         }
 
-        // Update Calendar if visible (handles day change)
         if (calendarLayout.visibility == View.VISIBLE) {
-            // We only need to redraw if date changed, but light redraw is okay
             drawCustomCalendar(globalTextColor, globalThemeColor)
         }
     }
 
-    // --- DRAW CUSTOM CALENDAR ---
     private fun drawCustomCalendar(textColor: Int, themeColor: Int) {
         val calendar = Calendar.getInstance()
         val currentDay = calendar.get(Calendar.DAY_OF_MONTH)
-        val currentMonth = calendar.get(Calendar.MONTH)
-        val currentYear = calendar.get(Calendar.YEAR)
+        // val currentMonth = calendar.get(Calendar.MONTH)
+        // val currentYear = calendar.get(Calendar.YEAR)
 
-        // 1. Set Month Title
         val monthFormat = SimpleDateFormat("LLLL yyyy", Locale.getDefault())
         val monthStr = monthFormat.format(calendar.time)
         tvMonthName.text = monthStr.substring(0, 1).uppercase() + monthStr.substring(1)
         tvMonthName.setTextColor(textColor)
 
-        // 2. Build Header (Mo Tu We...)
         calendarHeader.removeAllViews()
-        val weekDays = arrayOf("Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс") // Russian or Localized
-        val cellSize = dpToPx(40) // Square size
+        val weekDays = arrayOf("Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс")
+        val cellSize = dpToPx(40)
 
         for (day in weekDays) {
             val tv = TextView(this)
             tv.text = day
             tv.gravity = Gravity.CENTER
-            tv.setTextColor(Color.argb(150, Color.red(textColor), Color.green(textColor), Color.blue(textColor))) // Dimmed text color
+            tv.setTextColor(Color.argb(150, Color.red(textColor), Color.green(textColor), Color.blue(textColor)))
             tv.textSize = 14f
             tv.layoutParams = LinearLayout.LayoutParams(cellSize, ViewGroup.LayoutParams.WRAP_CONTENT)
             calendarHeader.addView(tv)
         }
 
-        // 3. Build Days Grid
         calendarGrid.removeAllViews()
 
-        // Reset to first day of month
         calendar.set(Calendar.DAY_OF_MONTH, 1)
         val daysInMonth = calendar.getActualMaximum(Calendar.DAY_OF_MONTH)
-        // Adjust for Russian week (Mon=1, Sun=7) vs Java Calendar (Sun=1)
-        var dayOfWeek = calendar.get(Calendar.DAY_OF_WEEK) - 1 // Sun=0, Mon=1...Sat=6
-        if (dayOfWeek == 0) dayOfWeek = 7 // Make Sun=7
-        val emptyCells = dayOfWeek - 1 // Mo=1 -> 0 empty
+        var dayOfWeek = calendar.get(Calendar.DAY_OF_WEEK) - 1
+        if (dayOfWeek == 0) dayOfWeek = 7
+        val emptyCells = dayOfWeek - 1
 
-        // Add Empty Cells
         for (i in 0 until emptyCells) {
             val emptyView = View(this)
             emptyView.layoutParams = GridLayout.LayoutParams().apply {
@@ -495,7 +640,6 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
             calendarGrid.addView(emptyView)
         }
 
-        // Add Day Cells
         for (i in 1..daysInMonth) {
             val tvDay = TextView(this)
             tvDay.text = i.toString()
@@ -507,13 +651,10 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
             }
 
             if (i == currentDay) {
-                // Today: Draw Circle
                 val circle = GradientDrawable()
                 circle.shape = GradientDrawable.OVAL
                 circle.setColor(themeColor)
                 tvDay.background = circle
-
-                // Determine text color for contrast (white is usually safe on colored circles)
                 tvDay.setTextColor(Color.WHITE)
                 tvDay.typeface = Typeface.DEFAULT_BOLD
             } else {
@@ -666,194 +807,6 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
             else -> cond
         }
     }
-    private fun requestLocationUpdate() {
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
-            ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.ACCESS_FINE_LOCATION), 100)
-            return
-        }
-        tvWeatherCondition.text = "Locating..."
-        val lastLocation = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER)
-        if (lastLocation != null) {
-            lat = lastLocation.latitude.toString()
-            lon = lastLocation.longitude.toString()
-            fetchWeather()
-        }
-
-        locationManager.requestSingleUpdate(LocationManager.NETWORK_PROVIDER, object : LocationListener {
-            override fun onLocationChanged(location: Location) {
-                lat = location.latitude.toString()
-                lon = location.longitude.toString()
-                fetchWeather()
-            }
-            override fun onStatusChanged(provider: String?, status: Int, extras: Bundle?) {}
-            override fun onProviderEnabled(provider: String) {}
-            override fun onProviderDisabled(provider: String) {}
-        }, null)
-    }
-    private fun checkNotificationPermission() {
-        val enabledListeners = Settings.Secure.getString(contentResolver, "enabled_notification_listeners")
-        if (enabledListeners == null || !enabledListeners.contains(packageName)) {
-            Toast.makeText(this, "Notification access required", Toast.LENGTH_LONG).show()
-            startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
-        }
-    }
-    private fun bindMusicService() {
-        try {
-            val sessions = mediaSessionManager?.getActiveSessions(ComponentName(this, MusicService::class.java))
-            currentController = sessions?.find { it.playbackState?.state == PlaybackState.STATE_PLAYING }
-                ?: sessions?.firstOrNull()
-
-            if (currentController != null) {
-                currentController?.registerCallback(mediaCallback)
-                updateMusicUI()
-            } else {
-                tvTrackTitle.text = "Play Music"
-                tvTrackArtist.text = "Waiting..."
-                seekBarMusic.progress = 0
-                seekBarMusic.max = 100
-                try {
-                    ivAlbumArt.setImageResource(R.drawable.ic_music_placeholder)
-                } catch (e: Exception) {
-                    ivAlbumArt.setImageResource(android.R.drawable.ic_menu_gallery)
-                }
-            }
-        } catch (e: SecurityException) {
-            tvTrackTitle.text = "No Permission"
-        }
-    }
-    private val mediaCallback = object : MediaController.Callback() {
-        override fun onPlaybackStateChanged(state: PlaybackState?) { updateMusicUI() }
-        override fun onMetadataChanged(metadata: MediaMetadata?) { updateMusicUI() }
-    }
-    private fun updateMusicUI() {
-        val metadata = currentController?.metadata
-        val playbackState = currentController?.playbackState
-        val title = metadata?.getString(MediaMetadata.METADATA_KEY_TITLE) ?: "Track"
-        val artist = metadata?.getString(MediaMetadata.METADATA_KEY_ARTIST) ?: "Artist"
-        val bitmap = metadata?.getBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART) ?: metadata?.getBitmap(MediaMetadata.METADATA_KEY_ART)
-
-        tvTrackTitle.text = title
-        tvTrackArtist.text = artist
-
-        if (bitmap != null) {
-            ivAlbumArt.setImageBitmap(bitmap)
-        } else {
-            try {
-                ivAlbumArt.setImageResource(R.drawable.ic_music_placeholder)
-            } catch (e: Exception) {
-                ivAlbumArt.setImageResource(android.R.drawable.ic_menu_gallery)
-            }
-        }
-
-        if (playbackState?.state == PlaybackState.STATE_PLAYING) {
-            btnPlayPause.setImageResource(android.R.drawable.ic_media_pause)
-            handler.removeCallbacks(musicProgressRunnable)
-            handler.post(musicProgressRunnable)
-        } else {
-            btnPlayPause.setImageResource(android.R.drawable.ic_media_play)
-            handler.removeCallbacks(musicProgressRunnable)
-        }
-        val duration = metadata?.getLong(MediaMetadata.METADATA_KEY_DURATION) ?: 0L
-        if (duration > 0) seekBarMusic.max = duration.toInt()
-        updateMusicProgress()
-    }
-    private fun updateMusicProgress() {
-        if (!isTrackingTouch && currentController != null) {
-            val playbackState = currentController?.playbackState
-            if (playbackState != null) {
-                var currentPos = playbackState.position
-                if (playbackState.state == PlaybackState.STATE_PLAYING) {
-                    val lastUpdateTime = playbackState.lastPositionUpdateTime
-                    if (lastUpdateTime > 0) {
-                        val timeDelta = SystemClock.elapsedRealtime() - lastUpdateTime
-                        val speed = playbackState.playbackSpeed
-                        currentPos += (timeDelta * speed).toLong()
-                    }
-                }
-                if (currentPos > seekBarMusic.max) currentPos = seekBarMusic.max.toLong()
-                if (currentPos < 0) currentPos = 0
-                seekBarMusic.progress = currentPos.toInt()
-            }
-        }
-    }
-    override fun onSensorChanged(event: SensorEvent?) {
-        if (isAutoBrightnessEnabled && event?.sensor?.type == Sensor.TYPE_LIGHT) {
-            val lux = event.values[0]
-            if (lux < 5f) {
-                if (!isNightModeActive) {
-                    isNightModeActive = true
-                    val prefs = getSharedPreferences("AppConfig", Context.MODE_PRIVATE)
-                    val nightLevel = prefs.getInt("NIGHT_BRIGHTNESS_LEVEL", 1)
-                    val targetBrightness = if (nightLevel < 1) 0.01f else nightLevel / 100f
-                    animateScreenBrightness(targetBrightness)
-                    if (isRedTintEnabled) applyRedText()
-                }
-            } else {
-                if (isNightModeActive) {
-                    isNightModeActive = false
-                    val systemBrightness = getSystemBrightness()
-                    animateScreenBrightness(systemBrightness) {
-                        val params = window.attributes
-                        params.screenBrightness = WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
-                        window.attributes = params
-                    }
-                    val prefs = getSharedPreferences("AppConfig", Context.MODE_PRIVATE)
-                    applyAppearance(prefs)
-                }
-            }
-        }
-    }
-    private fun animateScreenBrightness(targetValue: Float, onAnimationEnd: (() -> Unit)? = null) {
-        val currentBrightness = if (window.attributes.screenBrightness < 0) getSystemBrightness() else window.attributes.screenBrightness
-        brightnessAnimator?.cancel()
-        brightnessAnimator = ValueAnimator.ofFloat(currentBrightness, targetValue).apply {
-            duration = 1000
-            addUpdateListener { animator ->
-                val value = animator.animatedValue as Float
-                val layoutParams = window.attributes
-                layoutParams.screenBrightness = value
-                window.attributes = layoutParams
-            }
-            addListener(object : AnimatorListenerAdapter() {
-                override fun onAnimationEnd(animation: Animator) { onAnimationEnd?.invoke() }
-            })
-            start()
-        }
-    }
-    private fun getSystemBrightness(): Float {
-        return try {
-            val curBrightness = Settings.System.getInt(contentResolver, Settings.System.SCREEN_BRIGHTNESS)
-            curBrightness / 255f
-        } catch (e: Exception) { 0.5f }
-    }
-    override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {}
-    private fun resetBrightnessAndFilter() {
-        val layoutParams = window.attributes
-        layoutParams.screenBrightness = WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
-        window.attributes = layoutParams
-        if (isNightModeActive) { isNightModeActive = false; val prefs = getSharedPreferences("AppConfig", Context.MODE_PRIVATE); applyAppearance(prefs) }
-    }
-
-    private fun applyRedText() {
-        val color = Color.RED
-        setClockColor(color)
-        textDateSmall.setTextColor(color); textDateLarge.setTextColor(color); tvMiniWeather.setTextColor(color)
-        tvWeatherTemp.setTextColor(color); tvWeatherCondition.setTextColor(color); tvWeatherIcon.setTextColor(color)
-        tvTrackTitle.setTextColor(color); tvTrackArtist.setTextColor(color); tvEvent.setTextColor(color); tvLocation.setTextColor(color)
-        batteryStatusText.setTextColor(color)
-        btnPrev.setColorFilter(color); btnPlayPause.setColorFilter(color); btnNext.setColorFilter(color)
-        tvNextAlarmTime.setTextColor(color); ivAlarmIcon.setColorFilter(color)
-
-        // Red tint for calendar (easy switch)
-        globalTextColor = Color.RED
-        globalThemeColor = Color.RED
-        drawCustomCalendar(globalTextColor, globalThemeColor)
-
-        val redFilter = PorterDuffColorFilter(Color.RED, PorterDuff.Mode.MULTIPLY)
-
-        applyPanelStyle(Color.RED, 128, 0)
-    }
 
     private fun applyAppearance(prefs: android.content.SharedPreferences) {
         val textColorId = prefs.getInt("TEXT_COLOR_ID", 0)
@@ -878,7 +831,6 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         tvNextAlarmTime.setTextColor(textColor)
         ivAlarmIcon.setColorFilter(textColor)
 
-        // --- CUSTOM CALENDAR UPDATE ---
         val themeColorId = prefs.getInt("THEME_COLOR_ID", 0)
         val defaultThemeColors = intArrayOf(Color.parseColor("#448AFF"), Color.parseColor("#FF5252"), Color.parseColor("#69F0AE"), Color.parseColor("#FFFF00"), Color.parseColor("#E040FB"))
         val themeColor = prefs.getInt("THEME_COLOR_VALUE_$themeColorId", defaultThemeColors.getOrElse(themeColorId) { Color.parseColor("#448AFF") })
@@ -886,7 +838,6 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
 
         drawCustomCalendar(textColor, themeColor)
 
-        // --- LOAD BACKGROUND ---
         val bgImageUriStr = prefs.getString("BG_IMAGE_URI", null)
         val bgAlpha = prefs.getInt("BG_IMAGE_ALPHA", 255)
         val showPanels = prefs.getBoolean("SHOW_PANELS", false)
@@ -1029,9 +980,107 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
     private fun applyBackgroundColor(prefs: android.content.SharedPreferences) { val bgColorId = prefs.getInt("BG_COLOR_ID", 0); val defaultBgColors = intArrayOf(Color.parseColor("#333333"), Color.parseColor("#888888"), Color.parseColor("#0D47A1"), Color.parseColor("#B71C1C"), Color.parseColor("#1B5E20")); val defaultColor = defaultBgColors.getOrElse(bgColorId) { Color.DKGRAY }; val bgColor = prefs.getInt("BG_COLOR_VALUE_$bgColorId", defaultColor); rootLayout.setBackgroundColor(bgColor) }
     private fun getThemeResId(id: Int): Int { return when(id) { 1 -> R.style.Theme_ChargingClock_Red; 2 -> R.style.Theme_ChargingClock_Green; 3 -> R.style.Theme_ChargingClock_Yellow; 4 -> R.style.Theme_ChargingClock_Purple; else -> R.style.Theme_ChargingClock_Blue } }
 
-    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) { super.onRequestPermissionsResult(requestCode, permissions, grantResults); if (requestCode == 100 && grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) { requestLocationUpdate() } else if (requestCode == 200 && grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) { readCalendarEvent() } else { weatherUpdateRunnable.run() } }
-    override fun onWindowFocusChanged(hasFocus: Boolean) { super.onWindowFocusChanged(hasFocus); if (hasFocus) hideSystemUI() }
+    // --- SENSOR EVENT LISTENER ---
+    override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {}
+
+    override fun onSensorChanged(event: SensorEvent?) {
+        if (isAutoBrightnessEnabled && event?.sensor?.type == Sensor.TYPE_LIGHT) {
+            val lux = event.values[0]
+            if (lux < 5f) {
+                if (!isNightModeActive) {
+                    isNightModeActive = true
+                    val prefs = getSharedPreferences("AppConfig", Context.MODE_PRIVATE)
+                    val nightLevel = prefs.getInt("NIGHT_BRIGHTNESS_LEVEL", 1)
+                    val targetBrightness = if (nightLevel < 1) 0.01f else nightLevel / 100f
+                    animateScreenBrightness(targetBrightness)
+                    if (isRedTintEnabled) applyRedText()
+                }
+            } else {
+                if (isNightModeActive) {
+                    isNightModeActive = false
+                    val systemBrightness = getSystemBrightness()
+                    animateScreenBrightness(systemBrightness) {
+                        val params = window.attributes
+                        params.screenBrightness = WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
+                        window.attributes = params
+                    }
+                    val prefs = getSharedPreferences("AppConfig", Context.MODE_PRIVATE)
+                    applyAppearance(prefs)
+                }
+            }
+        }
+    }
+
+    // --- ОТСУТСТВОВАВШИЕ МЕТОДЫ ---
+
+    private fun requestLocationUpdate() {
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) { ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.ACCESS_FINE_LOCATION), 100); return }
+        tvWeatherCondition.text = "Locating..."
+        val lastLocation = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER)
+        if (lastLocation != null) { lat = lastLocation.latitude.toString(); lon = lastLocation.longitude.toString(); fetchWeather() }
+        locationManager.requestSingleUpdate(LocationManager.NETWORK_PROVIDER, object : LocationListener { override fun onLocationChanged(location: Location) { lat = location.latitude.toString(); lon = location.longitude.toString(); fetchWeather() }; override fun onStatusChanged(provider: String?, status: Int, extras: Bundle?) {}; override fun onProviderEnabled(provider: String) {}; override fun onProviderDisabled(provider: String) {} }, null)
+    }
+
+    private fun animateScreenBrightness(targetValue: Float, onAnimationEnd: (() -> Unit)? = null) {
+        val currentBrightness = if (window.attributes.screenBrightness < 0) getSystemBrightness() else window.attributes.screenBrightness
+        brightnessAnimator?.cancel()
+        brightnessAnimator = ValueAnimator.ofFloat(currentBrightness, targetValue).apply {
+            duration = 1000
+            addUpdateListener { animator ->
+                val value = animator.animatedValue as Float
+                val layoutParams = window.attributes
+                layoutParams.screenBrightness = value
+                window.attributes = layoutParams
+            }
+            addListener(object : AnimatorListenerAdapter() {
+                override fun onAnimationEnd(animation: Animator) { onAnimationEnd?.invoke() }
+            })
+            start()
+        }
+    }
+
+    private fun getSystemBrightness(): Float {
+        return try {
+            val curBrightness = Settings.System.getInt(contentResolver, Settings.System.SCREEN_BRIGHTNESS)
+            curBrightness / 255f
+        } catch (e: Exception) { 0.5f }
+    }
+
+    private fun resetBrightnessAndFilter() {
+        val layoutParams = window.attributes
+        layoutParams.screenBrightness = WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
+        window.attributes = layoutParams
+        if (isNightModeActive) {
+            isNightModeActive = false
+            val prefs = getSharedPreferences("AppConfig", Context.MODE_PRIVATE)
+            applyAppearance(prefs)
+        }
+    }
+
+    private fun applyRedText() {
+        val color = Color.RED
+        setClockColor(color)
+        textDateSmall.setTextColor(color); textDateLarge.setTextColor(color); tvMiniWeather.setTextColor(color)
+        tvWeatherTemp.setTextColor(color); tvWeatherCondition.setTextColor(color); tvWeatherIcon.setTextColor(color)
+        tvTrackTitle.setTextColor(color); tvTrackArtist.setTextColor(color); tvEvent.setTextColor(color); tvLocation.setTextColor(color)
+        batteryStatusText.setTextColor(color)
+        btnPrev.setColorFilter(color); btnPlayPause.setColorFilter(color); btnNext.setColorFilter(color)
+        tvNextAlarmTime.setTextColor(color); ivAlarmIcon.setColorFilter(color)
+
+        globalTextColor = Color.RED
+        globalThemeColor = Color.RED
+        drawCustomCalendar(globalTextColor, globalThemeColor)
+
+        applyPanelStyle(Color.RED, 128, 0)
+    }
+
+    private fun updateInitialBatteryStatus() {
+        val intent: Intent? = registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
+        val status: Int = intent?.getIntExtra(BatteryManager.EXTRA_STATUS, -1) ?: -1
+        val isCharging: Boolean = status == BatteryManager.BATTERY_STATUS_CHARGING || status == BatteryManager.BATTERY_STATUS_FULL
+        if (isCharging) { batteryStatusText.text = "Заряжается"; batteryStatusText.setTextColor(Color.GREEN) } else { batteryStatusText.text = "Работа от батареи"; batteryStatusText.setTextColor(Color.RED) }
+    }
+
+    override fun onDestroy() { super.onDestroy(); try { unregisterReceiver(powerReceiver) } catch (e: Exception) {} }
     private fun hideSystemUI() { window.decorView.systemUiVisibility = (View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY or View.SYSTEM_UI_FLAG_LAYOUT_STABLE or View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION or View.SYSTEM_UI_FLAG_FULLSCREEN) }
-    private fun updateInitialBatteryStatus() { val intent: Intent? = registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED)); val status: Int = intent?.getIntExtra(BatteryManager.EXTRA_STATUS, -1) ?: -1; val isCharging: Boolean = status == BatteryManager.BATTERY_STATUS_CHARGING || status == BatteryManager.BATTERY_STATUS_FULL; if (isCharging) { batteryStatusText.text = "Заряжается"; batteryStatusText.setTextColor(Color.GREEN) } else { batteryStatusText.text = "Работа от батареи"; batteryStatusText.setTextColor(Color.RED) } }
-    override fun onDestroy() { super.onDestroy(); unregisterReceiver(powerReceiver) }
 }
