@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/rootSettingsLayout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
@@ -279,19 +280,61 @@
                         android:maxHeight="20dp"/>
                 </LinearLayout>
 
-                <LinearLayout android:id="@+id/containerRedTint" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:visibility="gone">
-                    <Switch
-                        android:id="@+id/switchRedTint"
-                        android:layout_width="match_parent"
+                <LinearLayout
+                    android:id="@+id/containerNightFilter"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:paddingVertical="12dp"
+                    android:paddingHorizontal="8dp"
+                    android:background="@drawable/bg_settings_card"
+                    android:layout_marginBottom="8dp">
+
+                    <TextView
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:text="Красный текст в темноте"
-                        android:textColor="#DDDDDD"
-                        android:textSize="14sp"
-                        android:paddingStart="8dp"
+                        android:layout_weight="1"
+                        android:text="Фильтр в темноте"
+                        android:textColor="#FFFFFF"
+                        android:textSize="16sp"/>
+
+                    <Switch
+                        android:id="@+id/switchNightFilter"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
                         android:track="@drawable/custom_switch_track"
-                        android:thumb="@drawable/custom_switch_thumb"
-                        android:minHeight="32dp"/>
+                        android:thumb="@drawable/custom_switch_thumb"/>
                 </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/containerNightFilterColor"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:paddingVertical="12dp"
+                    android:paddingHorizontal="8dp"
+                    android:background="@drawable/bg_settings_card"
+                    android:layout_marginBottom="8dp"
+                    android:visibility="gone">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Цвет фильтра"
+                        android:textColor="#FFFFFF"
+                        android:textSize="16sp"/>
+
+                    <View
+                        android:id="@+id/viewNightFilterColorPreview"
+                        android:layout_width="32dp"
+                        android:layout_height="32dp"
+                        android:background="@drawable/bg_circle_shape"
+                        android:layout_marginEnd="8dp"/>
+                </LinearLayout>
+
                 <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#333333" android:layout_marginVertical="12dp"/>
 
                 <Switch

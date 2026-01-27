@@ -13,8 +13,10 @@ import android.provider.OpenableColumns
 import android.provider.Settings
 import android.text.Editable
 import android.text.TextWatcher
+import android.transition.TransitionManager
 import android.view.Gravity
 import android.view.View
+import android.view.ViewGroup
 import android.widget.Button
 import android.widget.EditText
 import android.widget.LinearLayout
@@ -31,23 +33,30 @@ import androidx.core.widget.addTextChangedListener
 class SettingsActivity : AppCompatActivity() {
 
     private lateinit var prefs: SharedPreferences
+    private lateinit var rootLayout: LinearLayout // Для анимации
 
     // UI Elements
     private lateinit var tvFontLabel: TextView
     private lateinit var tvAlphaLabel: TextView
     private lateinit var containerBgColor: LinearLayout
-    private lateinit var containerRedTint: LinearLayout
+
+    // Переименованные/Новые контейнеры
+    private lateinit var containerNightFilterColor: LinearLayout
+    private lateinit var viewNightFilterColorPreview: View
+
     private lateinit var containerNightBrightness: LinearLayout
     private lateinit var containerThemeColor: LinearLayout
     private lateinit var containerSplitOptions: LinearLayout
     private lateinit var containerClockOptions: LinearLayout
-    // containerCalendarOptions REMOVED
     private lateinit var containerDateOptions: LinearLayout
     private lateinit var containerPanelSettings: LinearLayout
 
     private lateinit var switchBgMode: Switch
     private lateinit var switchAutoBrightness: Switch
-    private lateinit var switchRedTint: Switch
+
+    // Переименованный свитч
+    private lateinit var switchNightFilter: Switch
+
     private lateinit var seekBarNightBrightness: SeekBar
     private lateinit var tvNightBrightnessValue: TextView
     private lateinit var switchAutoLocation: Switch
@@ -72,7 +81,6 @@ class SettingsActivity : AppCompatActivity() {
 
     private lateinit var switchBgScaleFill: Switch
 
-    // Standard Palettes (5 colors)
     private val defaultTextColors = intArrayOf(Color.WHITE, Color.GREEN, Color.CYAN, Color.YELLOW, Color.RED)
     private val defaultBgColors = intArrayOf(Color.parseColor("#333333"), Color.parseColor("#888888"), Color.parseColor("#0D47A1"), Color.parseColor("#B71C1C"), Color.parseColor("#1B5E20"))
     private val defaultPanelColors = intArrayOf(Color.WHITE, Color.parseColor("#444444"), Color.parseColor("#B71C1C"), Color.parseColor("#E65100"), Color.parseColor("#1B5E20"))
@@ -104,6 +112,8 @@ class SettingsActivity : AppCompatActivity() {
         setContentView(R.layout.activity_settings)
 
         prefs = getSharedPreferences("AppConfig", Context.MODE_PRIVATE)
+        // Получаем корневой layout для анимаций (предполагаем, что корневой элемент в XML - LinearLayout)
+        rootLayout = findViewById(R.id.rootSettingsLayout) ?: findViewById(android.R.id.content) as LinearLayout
 
         initViews()
         setupBackgroundMode()
@@ -121,6 +131,7 @@ class SettingsActivity : AppCompatActivity() {
         findViewById<Button>(R.id.btnBack).setOnClickListener { finish() }
     }
 
+    // ... (Методы setupColorRadioGroup, updateRadioButtonStyle, isColorDark, checkColorConflict - БЕЗ ИЗМЕНЕНИЙ) ...
     private fun setupColorRadioGroup(radioGroup: RadioGroup, keyPrefix: String, defaultColors: IntArray) {
         val savedIndex = prefs.getInt("${keyPrefix}_ID", 0)
         if (savedIndex < radioGroup.childCount) {
@@ -157,87 +168,52 @@ class SettingsActivity : AppCompatActivity() {
                     updateRadioButtonStyle(rb, newColor)
                     rb.isChecked = true
                     prefs.edit().putInt("${keyPrefix}_ID", i).apply()
-
                     Toast.makeText(this, "Color saved", Toast.LENGTH_SHORT).show()
                 }
                 true
             }
         }
-
         radioGroup.setOnCheckedChangeListener { group, checkedId ->
             val index = group.indexOfChild(group.findViewById(checkedId))
-            if (index != -1) {
-                prefs.edit().putInt("${keyPrefix}_ID", index).apply()
-            }
+            if (index != -1) prefs.edit().putInt("${keyPrefix}_ID", index).apply()
         }
     }
-
     private fun updateRadioButtonStyle(rb: RadioButton, color: Int) {
         rb.backgroundTintList = ColorStateList.valueOf(color)
         val tickColor = if (isColorDark(color)) Color.WHITE else Color.BLACK
         rb.foregroundTintList = ColorStateList.valueOf(tickColor)
     }
-
     private fun isColorDark(color: Int): Boolean {
         val darkness = 1 - (0.299 * Color.red(color) + 0.587 * Color.green(color) + 0.114 * Color.blue(color)) / 255
         return darkness >= 0.5
     }
-
     private fun checkColorConflict(changingType: String, newColor: Int): Boolean {
         val bgId = prefs.getInt("BG_COLOR_ID", 0)
         val bgColor = prefs.getInt("BG_COLOR_VALUE_$bgId", Color.parseColor("#333333"))
-
         val textId = prefs.getInt("TEXT_COLOR_ID", 0)
         val textColor = prefs.getInt("TEXT_COLOR_VALUE_$textId", Color.WHITE)
-
         val panelId = prefs.getInt("PANEL_COLOR_ID", 0)
         val panelColor = prefs.getInt("PANEL_COLOR_VALUE_$panelId", Color.WHITE)
         val showPanels = prefs.getBoolean("SHOW_PANELS", false)
-
         val isNewWhite = (newColor == Color.WHITE)
         val isNewBlack = isColorDark(newColor) && (Color.red(newColor) < 30 && Color.green(newColor) < 30 && Color.blue(newColor) < 30)
-
         if (changingType == "TEXT_COLOR") {
             if (isNewWhite) {
-                if (!showPanels && bgColor == Color.WHITE) {
-                    Toast.makeText(this, "Can't select white text on white background!", Toast.LENGTH_LONG).show()
-                    return true
-                }
-                if (showPanels && panelColor == Color.WHITE) {
-                    Toast.makeText(this, "Can't select white text on white panel!", Toast.LENGTH_LONG).show()
-                    return true
-                }
+                if (!showPanels && bgColor == Color.WHITE) { Toast.makeText(this, "Can't select white text on white background!", Toast.LENGTH_LONG).show(); return true }
+                if (showPanels && panelColor == Color.WHITE) { Toast.makeText(this, "Can't select white text on white panel!", Toast.LENGTH_LONG).show(); return true }
             }
             if (isNewBlack) {
-                if (!showPanels && isColorDark(bgColor) && (Color.red(bgColor) < 50)) {
-                    Toast.makeText(this, "Text won't be visible on dark background!", Toast.LENGTH_LONG).show()
-                    return true
-                }
-                if (showPanels && isColorDark(panelColor) && (Color.red(panelColor) < 50)) {
-                    Toast.makeText(this, "Text won't be visible on dark panel!", Toast.LENGTH_LONG).show()
-                    return true
-                }
+                if (!showPanels && isColorDark(bgColor) && (Color.red(bgColor) < 50)) { Toast.makeText(this, "Text won't be visible on dark background!", Toast.LENGTH_LONG).show(); return true }
+                if (showPanels && isColorDark(panelColor) && (Color.red(panelColor) < 50)) { Toast.makeText(this, "Text won't be visible on dark panel!", Toast.LENGTH_LONG).show(); return true }
             }
         }
         else if (changingType == "BG_COLOR") {
-            if (isNewWhite && !showPanels && textColor == Color.WHITE) {
-                Toast.makeText(this, "Can't select white background with white text!", Toast.LENGTH_LONG).show()
-                return true
-            }
-            if (isNewBlack && !showPanels && isColorDark(textColor) && (Color.red(textColor) < 50)) {
-                Toast.makeText(this, "Can't select dark background with dark text!", Toast.LENGTH_LONG).show()
-                return true
-            }
+            if (isNewWhite && !showPanels && textColor == Color.WHITE) { Toast.makeText(this, "Can't select white background with white text!", Toast.LENGTH_LONG).show(); return true }
+            if (isNewBlack && !showPanels && isColorDark(textColor) && (Color.red(textColor) < 50)) { Toast.makeText(this, "Can't select dark background with dark text!", Toast.LENGTH_LONG).show(); return true }
         }
         else if (changingType == "PANEL_COLOR" && showPanels) {
-            if (isNewWhite && textColor == Color.WHITE) {
-                Toast.makeText(this, "Can't select white panel with white text!", Toast.LENGTH_LONG).show()
-                return true
-            }
-            if (isNewBlack && isColorDark(textColor) && (Color.red(textColor) < 50)) {
-                Toast.makeText(this, "Can't select dark panel with dark text!", Toast.LENGTH_LONG).show()
-                return true
-            }
+            if (isNewWhite && textColor == Color.WHITE) { Toast.makeText(this, "Can't select white panel with white text!", Toast.LENGTH_LONG).show(); return true }
+            if (isNewBlack && isColorDark(textColor) && (Color.red(textColor) < 50)) { Toast.makeText(this, "Can't select dark panel with dark text!", Toast.LENGTH_LONG).show(); return true }
         }
         return false
     }
@@ -271,6 +247,7 @@ class SettingsActivity : AppCompatActivity() {
         updateBgColorVisibility()
     }
 
+    // ... (Методы showColorPickerDialog, createColorSeekBar, createLabel, dpToPx - БЕЗ ИЗМЕНЕНИЙ) ...
     private fun showColorPickerDialog(initialColor: Int, onColorSelected: (Int) -> Unit) {
         val dialogView = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -278,51 +255,34 @@ class SettingsActivity : AppCompatActivity() {
             setPadding(p, p, p, p)
             gravity = Gravity.CENTER_HORIZONTAL
         }
-
         val preview = View(this).apply {
             layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dpToPx(60))
             setBackgroundColor(initialColor)
-            background = GradientDrawable().apply {
-                setColor(initialColor)
-                setStroke(2, Color.GRAY)
-            }
+            background = GradientDrawable().apply { setColor(initialColor); setStroke(2, Color.GRAY) }
         }
         dialogView.addView(preview)
-
         val hexInput = EditText(this).apply {
             hint = "HEX (e.g. #FF0000)"
             setText(String.format("#%06X", (0xFFFFFF and initialColor)))
             layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
         }
         dialogView.addView(hexInput)
-
         var red = Color.red(initialColor)
         var green = Color.green(initialColor)
         var blue = Color.blue(initialColor)
-
         fun updateFromSliders() {
             val c = Color.rgb(red, green, blue)
-            val drawable = GradientDrawable().apply {
-                setColor(c)
-                setStroke(2, Color.GRAY)
-            }
+            val drawable = GradientDrawable().apply { setColor(c); setStroke(2, Color.GRAY) }
             preview.background = drawable
-
             val hex = String.format("#%06X", (0xFFFFFF and c))
             if (!hexInput.hasFocus()) hexInput.setText(hex)
         }
-
         val sbRed = createColorSeekBar(Color.RED, red) { p -> red = p; updateFromSliders() }
         val sbGreen = createColorSeekBar(Color.GREEN, green) { p -> green = p; updateFromSliders() }
         val sbBlue = createColorSeekBar(Color.BLUE, blue) { p -> blue = p; updateFromSliders() }
-
-        dialogView.addView(createLabel("Red"))
-        dialogView.addView(sbRed)
-        dialogView.addView(createLabel("Green"))
-        dialogView.addView(sbGreen)
-        dialogView.addView(createLabel("Blue"))
-        dialogView.addView(sbBlue)
-
+        dialogView.addView(createLabel("Red")); dialogView.addView(sbRed)
+        dialogView.addView(createLabel("Green")); dialogView.addView(sbGreen)
+        dialogView.addView(createLabel("Blue")); dialogView.addView(sbBlue)
         hexInput.addTextChangedListener(object : TextWatcher {
             override fun afterTextChanged(s: Editable?) {
                 if (hexInput.hasFocus()) {
@@ -331,10 +291,7 @@ class SettingsActivity : AppCompatActivity() {
                         red = Color.red(color); sbRed.progress = red
                         green = Color.green(color); sbGreen.progress = green
                         blue = Color.blue(color); sbBlue.progress = blue
-                        val drawable = GradientDrawable().apply {
-                            setColor(color)
-                            setStroke(2, Color.GRAY)
-                        }
+                        val drawable = GradientDrawable().apply { setColor(color); setStroke(2, Color.GRAY) }
                         preview.background = drawable
                     } catch (e: Exception) { }
                 }
@@ -342,7 +299,6 @@ class SettingsActivity : AppCompatActivity() {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
         })
-
         AlertDialog.Builder(this)
             .setTitle("Select Color")
             .setView(dialogView)
@@ -350,7 +306,6 @@ class SettingsActivity : AppCompatActivity() {
             .setNegativeButton("Cancel", null)
             .show()
     }
-
     private fun createColorSeekBar(tintColor: Int, initial: Int, onChange: (Int) -> Unit): SeekBar {
         return SeekBar(this).apply {
             max = 255
@@ -364,11 +319,9 @@ class SettingsActivity : AppCompatActivity() {
             })
         }
     }
-
     private fun createLabel(text: String): TextView {
         return TextView(this).apply { this.text = text; setPadding(0, 20, 0, 0); setTextColor(Color.LTGRAY) }
     }
-
     private fun dpToPx(dp: Int): Int = (dp * resources.displayMetrics.density).toInt()
 
     private fun initViews() {
@@ -376,20 +329,56 @@ class SettingsActivity : AppCompatActivity() {
         tvAlphaLabel = findViewById(R.id.tvAlphaLabel)
 
         containerBgColor = findViewById(R.id.containerBgColor)
-        containerRedTint = findViewById(R.id.containerRedTint)
+
+        // Переименованный контейнер фильтра
+        containerNightFilterColor = findViewById(R.id.containerNightFilterColor)
+        viewNightFilterColorPreview = findViewById(R.id.viewNightFilterColorPreview)
+        switchNightFilter = findViewById(R.id.switchNightFilter)
+
+        // Логика инициализации фильтра (наследуем старую настройку RED_TINT_ENABLED если есть, или новую)
+        val isNightEnabled = prefs.getBoolean("NIGHT_FILTER_ENABLED", prefs.getBoolean("RED_TINT_ENABLED", false))
+        switchNightFilter.isChecked = isNightEnabled
+        containerNightFilterColor.visibility = if (isNightEnabled) View.VISIBLE else View.GONE
+
+        // Загрузка цвета (по умолчанию #9EA793)
+        val savedNightColor = prefs.getInt("NIGHT_FILTER_COLOR", Color.parseColor("#9EA793"))
+        updateNightColorPreview(savedNightColor)
+
+        // Слушатель переключения
+        switchNightFilter.setOnCheckedChangeListener { _, isChecked ->
+            // Плавная анимация появления
+            TransitionManager.beginDelayedTransition(rootLayout as ViewGroup)
+
+            containerNightFilterColor.visibility = if (isChecked) View.VISIBLE else View.GONE
+            prefs.edit().putBoolean("NIGHT_FILTER_ENABLED", isChecked)
+                .putBoolean("RED_TINT_ENABLED", isChecked) // Поддержка совместимости
+                .apply()
+
+            // Если включили автояркость, то и фильтр показываем
+            updateAutoBrightnessVisibility(switchAutoBrightness.isChecked)
+        }
+
+        // Слушатель клика на цвет
+        viewNightFilterColorPreview.setOnClickListener {
+            val currentColor = prefs.getInt("NIGHT_FILTER_COLOR", Color.parseColor("#9EA793"))
+            showColorPickerDialog(currentColor) { newColor ->
+                prefs.edit().putInt("NIGHT_FILTER_COLOR", newColor).apply()
+                updateNightColorPreview(newColor)
+            }
+        }
+
         containerNightBrightness = findViewById(R.id.containerNightBrightness)
         containerThemeColor = findViewById(R.id.containerThemeColor)
         containerSplitOptions = findViewById(R.id.containerSplitOptions)
         containerClockOptions = findViewById(R.id.containerClockOptions)
-
-        // containerCalendarOptions removed
-
         containerDateOptions = findViewById(R.id.containerDateOptions)
         containerPanelSettings = findViewById(R.id.containerPanelSettings)
 
         switchBgMode = findViewById(R.id.switchBgMode)
         switchAutoBrightness = findViewById(R.id.switchAutoBrightness)
-        switchRedTint = findViewById(R.id.switchRedTint)
+
+        // switchRedTint УДАЛЕН, заменен на switchNightFilter выше
+
         seekBarNightBrightness = findViewById(R.id.seekBarNightBrightness)
         tvNightBrightnessValue = findViewById(R.id.tvNightBrightnessValue)
         switchAutoLocation = findViewById(R.id.switchAutoLocation)
@@ -429,6 +418,14 @@ class SettingsActivity : AppCompatActivity() {
         tvFontLabel.text = "Font: $savedFontName"
     }
 
+    private fun updateNightColorPreview(color: Int) {
+        val drawable = GradientDrawable()
+        drawable.shape = GradientDrawable.OVAL
+        drawable.setColor(color)
+        drawable.setStroke(2, Color.WHITE)
+        viewNightFilterColorPreview.background = drawable
+    }
+
     private fun setupBackgroundMode() {
         switchBgMode.isChecked = prefs.getBoolean("BG_MODE_ENABLED", false)
         switchBgMode.setOnClickListener {
@@ -458,7 +455,8 @@ class SettingsActivity : AppCompatActivity() {
             updateAutoBrightnessVisibility(isChecked)
         }
 
-        val savedNightBrightness = prefs.getInt("NIGHT_BRIGHTNESS_LEVEL", 1)
+        val savedNightBrightness = prefs.getInt("NIGHT_BRIGHTNESS_LEVEL", 25)
+        seekBarNightBrightness.max = 100
         seekBarNightBrightness.progress = savedNightBrightness
         tvNightBrightnessValue.text = "Night Brightness: $savedNightBrightness%"
 
@@ -473,9 +471,7 @@ class SettingsActivity : AppCompatActivity() {
             override fun onStopTrackingTouch(seekBar: SeekBar?) {}
         })
 
-        switchRedTint.isChecked = prefs.getBoolean("RED_TINT_ENABLED", false)
-        switchRedTint.setOnCheckedChangeListener { _, isChecked -> prefs.edit().putBoolean("RED_TINT_ENABLED", isChecked).apply() }
-
+        // switchRedTint listener moved to initViews
         switchAutoLocation.isChecked = prefs.getBoolean("AUTO_LOCATION", false)
         switchAutoLocation.setOnCheckedChangeListener { _, isChecked -> prefs.edit().putBoolean("AUTO_LOCATION", isChecked).apply() }
 
@@ -483,32 +479,27 @@ class SettingsActivity : AppCompatActivity() {
         switchShowBattery.setOnCheckedChangeListener { _, isChecked -> prefs.edit().putBoolean("SHOW_BATTERY_STATUS", isChecked).apply() }
     }
 
+    // ... (Методы setupDisplayMode, setupPanelSettings, updateVisibility - БЕЗ ИЗМЕНЕНИЙ) ...
     private fun setupDisplayMode() {
         val isSplit = prefs.getBoolean("IS_SPLIT_MODE", false)
         if (isSplit) rgDisplayMode.check(R.id.rbModeSplit) else rgDisplayMode.check(R.id.rbModeClock)
-
         rgDisplayMode.setOnCheckedChangeListener { _, checkedId ->
             val splitSelected = (checkedId == R.id.rbModeSplit)
             prefs.edit().putBoolean("IS_SPLIT_MODE", splitSelected).apply()
             updateVisibility()
         }
-
         switchShowDate.isChecked = prefs.getBoolean("SHOW_CLOCK_DATE", true)
         switchShowDate.setOnCheckedChangeListener { _, isChecked -> prefs.edit().putBoolean("SHOW_CLOCK_DATE", isChecked).apply() }
-
         switchShowNextAlarm.isChecked = prefs.getBoolean("SHOW_NEXT_ALARM", false)
         switchShowNextAlarm.setOnCheckedChangeListener { _, isChecked -> prefs.edit().putBoolean("SHOW_NEXT_ALARM", isChecked).apply() }
-
         switchShowMiniWeather.isChecked = prefs.getBoolean("SHOW_MINI_WEATHER", false)
         switchShowMiniWeather.setOnCheckedChangeListener { _, isChecked -> prefs.edit().putBoolean("SHOW_MINI_WEATHER", isChecked).apply() }
-
         val savedDateFormat = prefs.getInt("DATE_FORMAT_MODE", 1)
         (rgDateFormat.getChildAt(savedDateFormat) as? RadioButton)?.isChecked = true
         rgDateFormat.setOnCheckedChangeListener { _, checkedId ->
             val formatIndex = rgDateFormat.indexOfChild(findViewById(checkedId))
             prefs.edit().putInt("DATE_FORMAT_MODE", formatIndex).apply()
         }
-
         val sideMode = prefs.getInt("SIDE_CONTENT_MODE", 0)
         (rgSideContent.getChildAt(sideMode) as? RadioButton)?.isChecked = true
         rgSideContent.setOnCheckedChangeListener { _, checkedId ->
@@ -516,7 +507,6 @@ class SettingsActivity : AppCompatActivity() {
             prefs.edit().putInt("SIDE_CONTENT_MODE", newMode).apply()
             updateVisibility()
         }
-
         updateVisibility()
     }
 
@@ -524,25 +514,20 @@ class SettingsActivity : AppCompatActivity() {
         val showPanels = prefs.getBoolean("SHOW_PANELS", false)
         switchShowPanels.isChecked = showPanels
         containerPanelSettings.visibility = if (showPanels) View.VISIBLE else View.GONE
-
         val bgAlphaVisibility = if (showPanels) View.GONE else View.VISIBLE
         tvAlphaLabel.visibility = bgAlphaVisibility
         findViewById<SeekBar>(R.id.seekBarAlpha).visibility = bgAlphaVisibility
-
         switchShowPanels.setOnCheckedChangeListener { _, isChecked ->
             prefs.edit().putBoolean("SHOW_PANELS", isChecked).apply()
             containerPanelSettings.visibility = if (isChecked) View.VISIBLE else View.GONE
-
             val newVisibility = if (isChecked) View.GONE else View.VISIBLE
             tvAlphaLabel.visibility = newVisibility
             findViewById<SeekBar>(R.id.seekBarAlpha).visibility = newVisibility
         }
-
         val panelAlpha = prefs.getInt("PANEL_ALPHA", 30)
         seekBarPanelAlpha.max = 100
         seekBarPanelAlpha.progress = panelAlpha
         tvPanelAlphaLabel.text = "Transparency: $panelAlpha%"
-
         seekBarPanelAlpha.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
                 tvPanelAlphaLabel.text = "Transparency: $progress%"
@@ -551,12 +536,10 @@ class SettingsActivity : AppCompatActivity() {
             override fun onStartTrackingTouch(seekBar: SeekBar?) {}
             override fun onStopTrackingTouch(seekBar: SeekBar?) {}
         })
-
         val panelBlur = prefs.getInt("PANEL_BLUR_RADIUS", 0)
         seekBarPanelBlur.max = 100
         seekBarPanelBlur.progress = panelBlur
         tvPanelBlurLabel.text = "Blur Effect: $panelBlur%"
-
         seekBarPanelBlur.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
                 tvPanelBlurLabel.text = "Blur Effect: $progress%"
@@ -573,7 +556,6 @@ class SettingsActivity : AppCompatActivity() {
         if (isSplit) {
             containerSplitOptions.visibility = View.VISIBLE
             containerClockOptions.visibility = View.GONE
-
             containerThemeColor.visibility = if (sideMode == 1) View.VISIBLE else View.GONE
             containerDateOptions.visibility = if (sideMode == 0) View.VISIBLE else View.GONE
         } else {
@@ -586,14 +568,28 @@ class SettingsActivity : AppCompatActivity() {
 
     private fun updateAutoBrightnessVisibility(isEnabled: Boolean) {
         if (isEnabled) {
-            containerRedTint.visibility = View.VISIBLE
+            // Теперь показываем блок фильтра, если автояркость включена
+            // (он был скрыт или показан при инициализации, но здесь мы обновляем видимость контейнера Switch)
+            // Но в нашей структуре layout containerRedTint (теперь containerNightFilter) всегда виден?
+            // Нет, в старом коде он скрывался/показывался.
+            // Проверим ID: containerRedTint -> containerNightFilter
+
+            // Если мы хотим скрывать настройку фильтра, когда автояркость выключена:
+            findViewById<View>(R.id.containerNightFilter).visibility = View.VISIBLE
+
+            // Если фильтр включен, показываем выбор цвета
+            val isFilterOn = switchNightFilter.isChecked
+            containerNightFilterColor.visibility = if(isFilterOn) View.VISIBLE else View.GONE
+
             containerNightBrightness.visibility = View.VISIBLE
         } else {
-            containerRedTint.visibility = View.GONE
+            findViewById<View>(R.id.containerNightFilter).visibility = View.GONE
+            containerNightFilterColor.visibility = View.GONE
             containerNightBrightness.visibility = View.GONE
         }
     }
 
+    // ... (Методы onResume, updateBgColorVisibility, updateAlphaLabel, getFileName - БЕЗ ИЗМЕНЕНИЙ) ...
     override fun onResume() {
         super.onResume()
         if (!Settings.canDrawOverlays(this)) {
@@ -603,37 +599,21 @@ class SettingsActivity : AppCompatActivity() {
             }
         }
     }
-
     private fun updateBgColorVisibility() {
         val hasBgImage = prefs.getString("BG_IMAGE_URI", null) != null
-        if (hasBgImage) {
-            containerBgColor.visibility = View.GONE
-        } else {
-            containerBgColor.visibility = View.VISIBLE
-        }
+        if (hasBgImage) containerBgColor.visibility = View.GONE else containerBgColor.visibility = View.VISIBLE
     }
-
     private fun updateAlphaLabel(progress: Int) {
         val percent = (progress / 255f * 100).toInt()
         tvAlphaLabel.text = "Image Transparency: $percent%"
     }
-
     private fun getFileName(uri: Uri): String {
         var result: String? = null
         if (uri.scheme == "content") {
             val cursor = contentResolver.query(uri, null, null, null, null)
-            try {
-                if (cursor != null && cursor.moveToFirst()) {
-                    val index = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
-                    if (index >= 0) result = cursor.getString(index)
-                }
-            } catch (e: Exception) { e.printStackTrace() } finally { cursor?.close() }
+            try { if (cursor != null && cursor.moveToFirst()) { val index = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME); if (index >= 0) result = cursor.getString(index) } } catch (e: Exception) { e.printStackTrace() } finally { cursor?.close() }
         }
-        if (result == null) {
-            result = uri.path
-            val cut = result?.lastIndexOf('/')
-            if (cut != null && cut != -1) result = result?.substring(cut + 1)
-        }
+        if (result == null) { result = uri.path; val cut = result?.lastIndexOf('/'); if (cut != null && cut != -1) result = result?.substring(cut + 1) }
         return result ?: "File"
     }
 }

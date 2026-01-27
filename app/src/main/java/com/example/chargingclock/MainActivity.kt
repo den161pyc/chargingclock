@@ -91,6 +91,9 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
     private var currentTextColorValue = 0
     private var currentThemeColorValue = 0
 
+    // Переменная для хранения текущего шрифта
+    private var currentTypeface: Typeface? = null
+
     private var lat = "55.75"
     private var lon = "37.62"
 
@@ -150,7 +153,7 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
     private var lightSensor: Sensor? = null
     private lateinit var locationManager: LocationManager
     private var isAutoBrightnessEnabled = false
-    private var isRedTintEnabled = false
+    private var isNightFilterEnabled = false // Переименованная переменная
     private var isAutoLocationEnabled = false
     private var isNightModeActive = false
     private var brightnessAnimator: ValueAnimator? = null
@@ -395,7 +398,7 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         applyAppearance(prefs)
 
         isAutoBrightnessEnabled = prefs.getBoolean("AUTO_BRIGHTNESS", false)
-        isRedTintEnabled = prefs.getBoolean("RED_TINT_ENABLED", false)
+        isNightFilterEnabled = prefs.getBoolean("NIGHT_FILTER_ENABLED", prefs.getBoolean("RED_TINT_ENABLED", false))
         isAutoLocationEnabled = prefs.getBoolean("AUTO_LOCATION", false)
 
         val isSplitMode = prefs.getBoolean("IS_SPLIT_MODE", false)
@@ -404,7 +407,12 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         val showBattery = prefs.getBoolean("SHOW_BATTERY_STATUS", true)
         batteryStatusText.visibility = if (showBattery) View.VISIBLE else View.GONE
         applyCustomFont(prefs)
-        if (isAutoBrightnessEnabled) { lightSensor?.let { sensorManager.registerListener(this, it, SensorManager.SENSOR_DELAY_NORMAL) } } else { sensorManager.unregisterListener(this); resetBrightnessAndFilter() }
+        if (isAutoBrightnessEnabled) {
+            lightSensor?.let { sensorManager.registerListener(this, it, SensorManager.SENSOR_DELAY_NORMAL) }
+        } else {
+            sensorManager.unregisterListener(this)
+            resetBrightnessAndFilter()
+        }
 
         handler.removeCallbacks(weatherUpdateRunnable)
         handler.removeCallbacks(musicProgressRunnable)
@@ -608,6 +616,8 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         val monthStr = monthFormat.format(calendar.time)
         tvMonthName.text = monthStr.substring(0, 1).uppercase() + monthStr.substring(1)
         tvMonthName.setTextColor(textColor)
+        // Применяем шрифт к названию месяца
+        if (currentTypeface != null) tvMonthName.typeface = currentTypeface
 
         calendarHeader.removeAllViews()
         val weekDays = arrayOf("Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс")
@@ -619,6 +629,10 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
             tv.gravity = Gravity.CENTER
             tv.setTextColor(Color.argb(150, Color.red(textColor), Color.green(textColor), Color.blue(textColor)))
             tv.textSize = 14f
+
+            // Применяем шрифт к дням недели
+            if (currentTypeface != null) tv.typeface = currentTypeface
+
             tv.layoutParams = LinearLayout.LayoutParams(cellSize, ViewGroup.LayoutParams.WRAP_CONTENT)
             calendarHeader.addView(tv)
         }
@@ -650,13 +664,19 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
                 height = cellSize
             }
 
+            // Применяем шрифт к числам
+            if (currentTypeface != null) {
+                tvDay.typeface = currentTypeface
+            }
+
             if (i == currentDay) {
                 val circle = GradientDrawable()
                 circle.shape = GradientDrawable.OVAL
                 circle.setColor(themeColor)
                 tvDay.background = circle
                 tvDay.setTextColor(Color.WHITE)
-                tvDay.typeface = Typeface.DEFAULT_BOLD
+                // Если шрифт не задан, делаем жирным, иначе оставляем кастомный
+                if (currentTypeface == null) tvDay.typeface = Typeface.DEFAULT_BOLD
             } else {
                 tvDay.setTextColor(textColor)
                 tvDay.background = null
@@ -668,7 +688,30 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
 
     private fun dpToPx(dp: Int): Int = (dp * resources.displayMetrics.density).toInt()
 
-    private fun updateNextAlarm() { val alarmManager = getSystemService(Context.ALARM_SERVICE) as AlarmManager; val info = alarmManager.nextAlarmClock; if (info != null) { val date = Date(info.triggerTime); val format = if (DateFormat.is24HourFormat(this)) "HH:mm" else "h:mm a"; val sdf = SimpleDateFormat(format, Locale.getDefault()); tvNextAlarmTime.text = sdf.format(date); alarmContainer.visibility = View.VISIBLE } else { alarmContainer.visibility = View.GONE } }
+    private fun updateNextAlarm() {
+        // Сначала проверяем, включена ли опция в настройках
+        val prefs = getSharedPreferences("AppConfig", Context.MODE_PRIVATE)
+        val showAlarm = prefs.getBoolean("SHOW_NEXT_ALARM", false)
+
+        // Если выключена — скрываем и выходим
+        if (!showAlarm) {
+            alarmContainer.visibility = View.GONE
+            return
+        }
+
+        // Стандартная логика получения будильника
+        val alarmManager = getSystemService(Context.ALARM_SERVICE) as AlarmManager
+        val info = alarmManager.nextAlarmClock
+        if (info != null) {
+            val date = Date(info.triggerTime)
+            val format = if (DateFormat.is24HourFormat(this)) "HH:mm" else "h:mm a"
+            val sdf = SimpleDateFormat(format, Locale.getDefault())
+            tvNextAlarmTime.text = sdf.format(date)
+            alarmContainer.visibility = View.VISIBLE
+        } else {
+            alarmContainer.visibility = View.GONE
+        }
+    }
     private fun checkCalendarPermission() { if (ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_CALENDAR) != PackageManager.PERMISSION_GRANTED) { ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.READ_CALENDAR), 200) } else { readCalendarEvent() } }
     private fun readCalendarEvent() {
         CoroutineScope(Dispatchers.IO).launch {
@@ -814,6 +857,7 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         val textColor = prefs.getInt("TEXT_COLOR_VALUE_$textColorId", defaultTextColors.getOrElse(textColorId) { Color.WHITE })
         globalTextColor = textColor
 
+        // Сброс цветов текста
         setClockColor(textColor)
         textDateSmall.setTextColor(textColor)
         textDateLarge.setTextColor(textColor)
@@ -822,7 +866,7 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         tvWeatherCondition.setTextColor(textColor)
         tvWeatherIcon.setTextColor(textColor)
         tvTrackTitle.setTextColor(textColor)
-        tvTrackArtist.setTextColor(Color.LTGRAY)
+        tvTrackArtist.setTextColor(Color.LTGRAY) // Возвращаем серый для артиста
         tvEvent.setTextColor(textColor)
         tvLocation.setTextColor(textColor)
         btnPrev.setColorFilter(textColor)
@@ -831,6 +875,12 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         tvNextAlarmTime.setTextColor(textColor)
         ivAlarmIcon.setColorFilter(textColor)
 
+        // === НОВОЕ: Сброс стилей плеера ===
+        seekBarMusic.thumb.setTintList(null) // Сброс тинта
+        seekBarMusic.progressDrawable.setTintList(null) // Сброс тинта
+        ivAlbumArt.clearColorFilter() // Убираем красный фильтр с обложки
+        // ===================================
+
         val themeColorId = prefs.getInt("THEME_COLOR_ID", 0)
         val defaultThemeColors = intArrayOf(Color.parseColor("#448AFF"), Color.parseColor("#FF5252"), Color.parseColor("#69F0AE"), Color.parseColor("#FFFF00"), Color.parseColor("#E040FB"))
         val themeColor = prefs.getInt("THEME_COLOR_VALUE_$themeColorId", defaultThemeColors.getOrElse(themeColorId) { Color.parseColor("#448AFF") })
@@ -838,6 +888,7 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
 
         drawCustomCalendar(textColor, themeColor)
 
+        // Логика восстановления фона (оставляем как было)
         val bgImageUriStr = prefs.getString("BG_IMAGE_URI", null)
         val bgAlpha = prefs.getInt("BG_IMAGE_ALPHA", 255)
         val showPanels = prefs.getBoolean("SHOW_PANELS", false)
@@ -846,7 +897,7 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         if (bgImageUriStr != null) {
             try {
                 val uri = Uri.parse(bgImageUriStr)
-                ivBackground.visibility = View.VISIBLE
+                ivBackground.visibility = View.VISIBLE // Возвращаем видимость
                 ivBackground.setImageURI(uri)
 
                 if (isBgFill) {
@@ -861,11 +912,13 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
                     ivBackground.imageAlpha = bgAlpha
                 }
 
+                // Восстанавливаем Blur Views
+                ivBlurLeft.visibility = if (showPanels) View.VISIBLE else View.GONE
+                ivBlurRight.visibility = if (showPanels) View.VISIBLE else View.GONE
+
                 ivBlurLeft.setImageURI(uri)
                 ivBlurLeft.imageAlpha = bgAlpha
-
                 alignBackgrounds(uri, isBgFill)
-
                 ivBlurRight.setImageURI(uri)
                 ivBlurRight.imageAlpha = bgAlpha
 
@@ -879,6 +932,7 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
             applyBackgroundColor(prefs)
         }
 
+        // Восстановление панелей
         val panelColorId = prefs.getInt("PANEL_COLOR_ID", 0)
         val defaultPanelColors = intArrayOf(Color.WHITE, Color.parseColor("#444444"), Color.parseColor("#B71C1C"), Color.parseColor("#E65100"), Color.parseColor("#1B5E20"))
         val defaultPanelColor = defaultPanelColors.getOrElse(panelColorId) { Color.WHITE }
@@ -969,10 +1023,88 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         }
     }
 
-    private fun applyCustomFont(prefs: android.content.SharedPreferences) { val fontUriString = prefs.getString("CUSTOM_FONT_URI", null); if (fontUriString != null) { try { val uri = Uri.parse(fontUriString); val pfd = contentResolver.openFileDescriptor(uri, "r"); if (pfd != null) { val fd: FileDescriptor = pfd.fileDescriptor; val typeface = Typeface.Builder(fd).build(); pfd.close(); setClockTypeface(typeface); textDateSmall.typeface = typeface; textDateLarge.typeface = typeface; tvWeatherTemp.typeface = typeface; tvWeatherCondition.typeface = typeface; tvWeatherIcon.typeface = typeface; batteryStatusText.typeface = typeface; tvTrackTitle.typeface = typeface; tvTrackArtist.typeface = typeface; tvEvent.typeface = typeface; tvLocation.typeface = typeface; tvNextAlarmTime.typeface = typeface; tvMiniWeather.typeface = typeface } } catch (e: Exception) { resetFonts() } } else { resetFonts() } }
-    private fun resetFonts() { val defaultTypeface = Typeface.DEFAULT; val clockTypeface = Typeface.create("sans-serif-thin", Typeface.NORMAL); setClockTypeface(clockTypeface); textDateSmall.typeface = defaultTypeface; textDateLarge.typeface = Typeface.create("sans-serif-light", Typeface.NORMAL); tvWeatherTemp.typeface = clockTypeface; tvWeatherCondition.typeface = defaultTypeface; tvWeatherIcon.typeface = defaultTypeface; batteryStatusText.typeface = defaultTypeface; tvTrackTitle.typeface = defaultTypeface; tvTrackArtist.typeface = defaultTypeface; tvEvent.typeface = defaultTypeface; tvLocation.typeface = defaultTypeface; tvNextAlarmTime.typeface = defaultTypeface; tvMiniWeather.typeface = defaultTypeface }
-    private fun updateBatteryColor() { if (!isNightModeActive || !isRedTintEnabled) { batteryStatusText.setTextColor(Color.GREEN) } else { batteryStatusText.setTextColor(Color.RED) } }
+    private fun applyCustomFont(prefs: android.content.SharedPreferences) {
+        val fontUriString = prefs.getString("CUSTOM_FONT_URI", null)
+        if (fontUriString != null) {
+            try {
+                val uri = Uri.parse(fontUriString)
+                val pfd = contentResolver.openFileDescriptor(uri, "r")
+                if (pfd != null) {
+                    val fd: FileDescriptor = pfd.fileDescriptor
+                    val typeface = Typeface.Builder(fd).build()
+                    pfd.close()
 
+                    // Сохраняем текущий шрифт
+                    currentTypeface = typeface
+
+                    setClockTypeface(typeface)
+                    textDateSmall.typeface = typeface
+                    textDateLarge.typeface = typeface
+                    tvWeatherTemp.typeface = typeface
+                    tvWeatherCondition.typeface = typeface
+                    tvWeatherIcon.typeface = typeface
+                    batteryStatusText.typeface = typeface
+                    tvTrackTitle.typeface = typeface
+                    tvTrackArtist.typeface = typeface
+                    tvEvent.typeface = typeface
+                    tvLocation.typeface = typeface
+                    tvNextAlarmTime.typeface = typeface
+                    tvMiniWeather.typeface = typeface
+
+                    // Применяем к заголовку месяца
+                    tvMonthName.typeface = typeface
+
+                    // Перерисовываем календарь, если он виден, чтобы применить шрифт к ячейкам
+                    if (calendarLayout.visibility == View.VISIBLE) {
+                        drawCustomCalendar(globalTextColor, globalThemeColor)
+                    }
+                }
+            } catch (e: Exception) {
+                resetFonts()
+            }
+        } else {
+            resetFonts()
+        }
+    }
+
+    private fun resetFonts() {
+        // Сбрасываем сохраненный шрифт
+        currentTypeface = null
+
+        val defaultTypeface = Typeface.DEFAULT
+        val clockTypeface = Typeface.create("sans-serif-thin", Typeface.NORMAL)
+        setClockTypeface(clockTypeface)
+        textDateSmall.typeface = defaultTypeface
+        textDateLarge.typeface = Typeface.create("sans-serif-light", Typeface.NORMAL)
+        tvWeatherTemp.typeface = clockTypeface
+        tvWeatherCondition.typeface = defaultTypeface
+        tvWeatherIcon.typeface = defaultTypeface
+        batteryStatusText.typeface = defaultTypeface
+        tvTrackTitle.typeface = defaultTypeface
+        tvTrackArtist.typeface = defaultTypeface
+        tvEvent.typeface = defaultTypeface
+        tvLocation.typeface = defaultTypeface
+        tvNextAlarmTime.typeface = defaultTypeface
+        tvMiniWeather.typeface = defaultTypeface
+
+        // Сбрасываем шрифт заголовка месяца
+        tvMonthName.typeface = Typeface.DEFAULT_BOLD
+
+        // Перерисовываем календарь
+        if (calendarLayout.visibility == View.VISIBLE) {
+            drawCustomCalendar(globalTextColor, globalThemeColor)
+        }
+    }
+    private fun updateBatteryColor() {
+        if (!isNightModeActive || !isNightFilterEnabled) {
+            batteryStatusText.setTextColor(Color.GREEN)
+        } else {
+            // Используем сохраненный цвет
+            val prefs = getSharedPreferences("AppConfig", Context.MODE_PRIVATE)
+            val nightColor = prefs.getInt("NIGHT_FILTER_COLOR", Color.parseColor("#9EA793"))
+            batteryStatusText.setTextColor(nightColor)
+        }
+    }
     private fun setSwitcherText(switcher: TextSwitcher, text: String) { val current = (switcher.currentView as? TextView)?.text?.toString() ?: ""; if (current != text) { if (text.isEmpty()) { val tv = switcher.nextView as TextView; tv.text = ""; switcher.showNext() } else { switcher.setText(text) } } }
     private fun setClockSize(sizeSp: Float) { val switchers = listOf(tsHour1, tsHour2, tsMinute1, tsMinute2); for (ts in switchers) { for (i in 0 until ts.childCount) { (ts.getChildAt(i) as TextView).setTextSize(TypedValue.COMPLEX_UNIT_SP, sizeSp) } }; tvSeparator.setTextSize(TypedValue.COMPLEX_UNIT_SP, sizeSp) }
     private fun setClockColor(color: Int) { val switchers = listOf(tsHour1, tsHour2, tsMinute1, tsMinute2); for (ts in switchers) { for (i in 0 until ts.childCount) { (ts.getChildAt(i) as TextView).setTextColor(color) } }; tvSeparator.setTextColor(color) }
@@ -990,14 +1122,17 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
                 if (!isNightModeActive) {
                     isNightModeActive = true
                     val prefs = getSharedPreferences("AppConfig", Context.MODE_PRIVATE)
-                    val nightLevel = prefs.getInt("NIGHT_BRIGHTNESS_LEVEL", 1)
+                    val nightLevel = prefs.getInt("NIGHT_BRIGHTNESS_LEVEL", 25)
                     val targetBrightness = if (nightLevel < 1) 0.01f else nightLevel / 100f
                     animateScreenBrightness(targetBrightness)
-                    if (isRedTintEnabled) applyRedText()
+
+                    // ВМЕСТО applyRedText()
+                    if (isNightFilterEnabled) applyNightText()
                 }
             } else {
                 if (isNightModeActive) {
                     isNightModeActive = false
+                    // Возвращаем системную яркость
                     val systemBrightness = getSystemBrightness()
                     animateScreenBrightness(systemBrightness) {
                         val params = window.attributes
@@ -1057,21 +1192,52 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         }
     }
 
-    private fun applyRedText() {
-        val color = Color.RED
-        setClockColor(color)
-        textDateSmall.setTextColor(color); textDateLarge.setTextColor(color); tvMiniWeather.setTextColor(color)
-        tvWeatherTemp.setTextColor(color); tvWeatherCondition.setTextColor(color); tvWeatherIcon.setTextColor(color)
-        tvTrackTitle.setTextColor(color); tvTrackArtist.setTextColor(color); tvEvent.setTextColor(color); tvLocation.setTextColor(color)
-        batteryStatusText.setTextColor(color)
-        btnPrev.setColorFilter(color); btnPlayPause.setColorFilter(color); btnNext.setColorFilter(color)
-        tvNextAlarmTime.setTextColor(color); ivAlarmIcon.setColorFilter(color)
+    private fun applyNightText() {
+        val prefs = getSharedPreferences("AppConfig", Context.MODE_PRIVATE)
+        // Получаем цвет из настроек (по умолчанию #9EA793)
+        val color = prefs.getInt("NIGHT_FILTER_COLOR", Color.parseColor("#9EA793"))
 
-        globalTextColor = Color.RED
-        globalThemeColor = Color.RED
+        // 1. Скрываем фоновые изображения для "True Black" эффекта
+        ivBackground.visibility = View.GONE
+        ivBlurLeft.visibility = View.GONE
+        ivBlurRight.visibility = View.GONE
+        rootLayout.setBackgroundColor(Color.BLACK)
+
+        // 2. Красим основные текстовые элементы
+        setClockColor(color)
+        textDateSmall.setTextColor(color)
+        textDateLarge.setTextColor(color)
+        tvMiniWeather.setTextColor(color)
+        tvWeatherTemp.setTextColor(color)
+        tvWeatherCondition.setTextColor(color)
+        tvWeatherIcon.setTextColor(color)
+        tvTrackTitle.setTextColor(color)
+        tvTrackArtist.setTextColor(color)
+        tvEvent.setTextColor(color)
+        tvLocation.setTextColor(color)
+        tvNextAlarmTime.setTextColor(color)
+
+        // 3. Красим иконки и кнопки
+        batteryStatusText.setTextColor(color)
+        btnPrev.setColorFilter(color)
+        btnPlayPause.setColorFilter(color)
+        btnNext.setColorFilter(color)
+        ivAlarmIcon.setColorFilter(color)
+
+        // 4. Красим элементы плеера (шкала и обложка)
+        seekBarMusic.thumb.setTint(color)
+        seekBarMusic.progressDrawable.setTint(color)
+
+        // Тонируем обложку
+        ivAlbumArt.colorFilter = PorterDuffColorFilter(color, PorterDuff.Mode.MULTIPLY)
+
+        // 5. Обновляем глобальные переменные и календарь
+        globalTextColor = color
+        globalThemeColor = color
         drawCustomCalendar(globalTextColor, globalThemeColor)
 
-        applyPanelStyle(Color.RED, 128, 0)
+        // Панели делаем прозрачными или едва заметными с выбранным цветом
+        applyPanelStyle(color, 50, 0)
     }
 
     private fun updateInitialBatteryStatus() {
