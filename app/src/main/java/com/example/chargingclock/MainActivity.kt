@@ -86,12 +86,9 @@ import kotlin.math.min
 
 class MainActivity : AppCompatActivity(), SensorEventListener {
 
-    // Переменные состояния
     private var currentThemeId = 0
     private var currentTextColorValue = 0
     private var currentThemeColorValue = 0
-
-    // Переменная для хранения текущего шрифта
     private var currentTypeface: Typeface? = null
 
     private var lat = "55.75"
@@ -108,7 +105,6 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
     private lateinit var ivBlurRight: ImageView
 
     private lateinit var containerSide: FrameLayout
-
     private lateinit var clockContainer: LinearLayout
     private lateinit var tsHour1: TextSwitcher
     private lateinit var tsHour2: TextSwitcher
@@ -124,7 +120,6 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
     private lateinit var tvNextAlarmTime: TextView
     private lateinit var tvMiniWeather: TextView
 
-    // Элементы календаря
     private lateinit var calendarLayout: LinearLayout
     private lateinit var tvMonthName: TextView
     private lateinit var calendarHeader: LinearLayout
@@ -147,13 +142,12 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
     private lateinit var btnNext: ImageButton
 
     private var mediaSessionManager: MediaSessionManager? = null
-
     private var isTrackingTouch = false
     private lateinit var sensorManager: SensorManager
     private var lightSensor: Sensor? = null
     private lateinit var locationManager: LocationManager
     private var isAutoBrightnessEnabled = false
-    private var isNightFilterEnabled = false // Переименованная переменная
+    private var isNightFilterEnabled = false // Фильтр ночного режима
     private var isAutoLocationEnabled = false
     private var isNightModeActive = false
     private var brightnessAnimator: ValueAnimator? = null
@@ -194,7 +188,6 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
                     batteryStatusText.text = "Работа от батареи"
                     batteryStatusText.setTextColor(Color.RED)
                     val prefs = getSharedPreferences("AppConfig", Context.MODE_PRIVATE)
-                    // Используем this@MainActivity чтобы вызвать метод Activity, а не переопределять его
                     if (prefs.getBoolean("BG_MODE_ENABLED", false)) {
                         this@MainActivity.finishAffinity()
                     }
@@ -205,21 +198,9 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        window.setFlags(
-            WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
-            WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
-        )
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            window.attributes.layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
-        }
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
-            setShowWhenLocked(true); setTurnScreenOn(true)
-        } else {
-            window.addFlags(WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON or WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-        }
+        window.setFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS, WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) { window.attributes.layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) { setShowWhenLocked(true); setTurnScreenOn(true) } else { window.addFlags(WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON or WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON) }
 
         val prefs = getSharedPreferences("AppConfig", Context.MODE_PRIVATE)
         currentThemeId = prefs.getInt("THEME_COLOR_ID", 0)
@@ -281,39 +262,13 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
 
         mediaSessionManager = getSystemService(Context.MEDIA_SESSION_SERVICE) as MediaSessionManager
 
-        btnPrev.setOnClickListener {
-            val controller = MusicService.currentController
-            if (controller != null) {
-                controller.transportControls?.skipToPrevious()
-            } else {
-                MusicService.instance?.refreshControllers()
-                Toast.makeText(this, "Плеер не найден", Toast.LENGTH_SHORT).show()
-            }
-        }
-
-        btnNext.setOnClickListener {
-            val controller = MusicService.currentController
-            if (controller != null) {
-                controller.transportControls?.skipToNext()
-            } else {
-                MusicService.instance?.refreshControllers()
-                Toast.makeText(this, "Плеер не найден", Toast.LENGTH_SHORT).show()
-            }
-        }
-
+        btnPrev.setOnClickListener { MusicService.currentController?.transportControls?.skipToPrevious() ?: run { MusicService.instance?.refreshControllers(); Toast.makeText(this, "Плеер не найден", Toast.LENGTH_SHORT).show() } }
+        btnNext.setOnClickListener { MusicService.currentController?.transportControls?.skipToNext() ?: run { MusicService.instance?.refreshControllers(); Toast.makeText(this, "Плеер не найден", Toast.LENGTH_SHORT).show() } }
         btnPlayPause.setOnClickListener {
             val controller = MusicService.currentController
             if (controller != null) {
-                val state = controller.playbackState?.state
-                if (state == PlaybackState.STATE_PLAYING) {
-                    controller.transportControls?.pause()
-                } else {
-                    controller.transportControls?.play()
-                }
-            } else {
-                MusicService.instance?.refreshControllers()
-                Toast.makeText(this, "Плеер не найден. Запустите музыку.", Toast.LENGTH_SHORT).show()
-            }
+                if (controller.playbackState?.state == PlaybackState.STATE_PLAYING) controller.transportControls?.pause() else controller.transportControls?.play()
+            } else { MusicService.instance?.refreshControllers(); Toast.makeText(this, "Плеер не найден", Toast.LENGTH_SHORT).show() }
         }
 
         seekBarMusic.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
@@ -322,10 +277,7 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
             override fun onStopTrackingTouch(seekBar: SeekBar?) {
                 isTrackingTouch = false
                 val controller = MusicService.currentController
-                if (controller != null) {
-                    controller.transportControls?.seekTo(seekBar?.progress?.toLong() ?: 0L)
-                    updateMusicProgress()
-                }
+                if (controller != null) { controller.transportControls?.seekTo(seekBar?.progress?.toLong() ?: 0L); updateMusicProgress() }
             }
         })
 
@@ -373,16 +325,12 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         val defaultTextColors = intArrayOf(Color.WHITE, Color.GREEN, Color.CYAN, Color.YELLOW, Color.RED)
         val defaultTextColor = defaultTextColors.getOrElse(textColorId) { Color.WHITE }
         val newTextColorValue = prefs.getInt("TEXT_COLOR_VALUE_$textColorId", defaultTextColor)
-
         val themeColorId = prefs.getInt("THEME_COLOR_ID", 0)
         val defaultThemeColors = intArrayOf(Color.parseColor("#448AFF"), Color.parseColor("#FF5252"), Color.parseColor("#69F0AE"), Color.parseColor("#FFFF00"), Color.parseColor("#E040FB"))
         val defaultThemeColor = defaultThemeColors.getOrElse(themeColorId) { Color.parseColor("#448AFF") }
         val newThemeColorValue = prefs.getInt("THEME_COLOR_VALUE_$themeColorId", defaultThemeColor)
 
-        if (newThemeId != currentThemeId ||
-            (currentTextColorValue != 0 && newTextColorValue != currentTextColorValue) ||
-            (currentThemeColorValue != 0 && newThemeColorValue != currentThemeColorValue)) {
-
+        if (newThemeId != currentThemeId || (currentTextColorValue != 0 && newTextColorValue != currentTextColorValue) || (currentThemeColorValue != 0 && newThemeColorValue != currentThemeColorValue)) {
             currentThemeId = newThemeId
             currentTextColorValue = newTextColorValue
             currentThemeColorValue = newThemeColorValue
@@ -395,24 +343,20 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         currentThemeColorValue = newThemeColorValue
 
         isNightModeActive = false
-        applyAppearance(prefs)
-
         isAutoBrightnessEnabled = prefs.getBoolean("AUTO_BRIGHTNESS", false)
         isNightFilterEnabled = prefs.getBoolean("NIGHT_FILTER_ENABLED", prefs.getBoolean("RED_TINT_ENABLED", false))
         isAutoLocationEnabled = prefs.getBoolean("AUTO_LOCATION", false)
-
         val isSplitMode = prefs.getBoolean("IS_SPLIT_MODE", false)
         val sideMode = prefs.getInt("SIDE_CONTENT_MODE", 0)
 
+        // Применяем настройки вида
+        applyAppearance(prefs)
+        applyCustomFont(prefs)
+
         val showBattery = prefs.getBoolean("SHOW_BATTERY_STATUS", true)
         batteryStatusText.visibility = if (showBattery) View.VISIBLE else View.GONE
-        applyCustomFont(prefs)
-        if (isAutoBrightnessEnabled) {
-            lightSensor?.let { sensorManager.registerListener(this, it, SensorManager.SENSOR_DELAY_NORMAL) }
-        } else {
-            sensorManager.unregisterListener(this)
-            resetBrightnessAndFilter()
-        }
+
+        if (isAutoBrightnessEnabled) { lightSensor?.let { sensorManager.registerListener(this, it, SensorManager.SENSOR_DELAY_NORMAL) } } else { sensorManager.unregisterListener(this); resetBrightnessAndFilter() }
 
         handler.removeCallbacks(weatherUpdateRunnable)
         handler.removeCallbacks(musicProgressRunnable)
@@ -423,30 +367,16 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         if (showPanels) {
             viewBgLeft.visibility = View.VISIBLE
             ivBlurLeft.visibility = View.VISIBLE
-
-            if (isSplitMode) {
-                viewBgRight.visibility = View.VISIBLE
-                ivBlurRight.visibility = View.VISIBLE
-            } else {
-                viewBgRight.visibility = View.GONE
-                ivBlurRight.visibility = View.GONE
-            }
+            if (isSplitMode) { viewBgRight.visibility = View.VISIBLE; ivBlurRight.visibility = View.VISIBLE } else { viewBgRight.visibility = View.GONE; ivBlurRight.visibility = View.GONE }
         } else {
-            viewBgLeft.visibility = View.GONE
-            ivBlurLeft.visibility = View.GONE
-            viewBgRight.visibility = View.GONE
-            ivBlurRight.visibility = View.GONE
+            viewBgLeft.visibility = View.GONE; ivBlurLeft.visibility = View.GONE; viewBgRight.visibility = View.GONE; ivBlurRight.visibility = View.GONE
         }
 
         if (isSplitMode) {
             containerSide.visibility = View.VISIBLE
             textDateSmall.visibility = View.GONE
             setClockSize(130f)
-
-            dateInfoLayout.visibility = View.GONE
-            calendarLayout.visibility = View.GONE
-            weatherLayout.visibility = View.GONE
-            musicLayout.visibility = View.GONE
+            dateInfoLayout.visibility = View.GONE; calendarLayout.visibility = View.GONE; weatherLayout.visibility = View.GONE; musicLayout.visibility = View.GONE
 
             when (sideMode) {
                 0 -> {
@@ -455,15 +385,11 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
                     val showMiniWeather = prefs.getBoolean("SHOW_MINI_WEATHER", false)
                     alarmContainer.visibility = if (showAlarm) View.VISIBLE else View.GONE
                     tvMiniWeather.visibility = if (showMiniWeather) View.VISIBLE else View.GONE
-                    alarmContainer.setOnClickListener {
-                        try { val intent = Intent(AlarmClock.ACTION_SHOW_ALARMS); intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK; startActivity(intent) } catch (e: Exception) { Toast.makeText(this, "Clock not found", Toast.LENGTH_SHORT).show() }
-                    }
-                    if (showAlarm) updateNextAlarm()
-                    if (showMiniWeather) { weatherUpdateRunnable.run() }
+                    alarmContainer.setOnClickListener { try { val intent = Intent(AlarmClock.ACTION_SHOW_ALARMS); intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK; startActivity(intent) } catch (e: Exception) { Toast.makeText(this, "Clock not found", Toast.LENGTH_SHORT).show() } }
+                    updateNextAlarm()
+                    if (showMiniWeather) weatherUpdateRunnable.run()
                 }
-                1 -> {
-                    calendarLayout.visibility = View.VISIBLE
-                }
+                1 -> { calendarLayout.visibility = View.VISIBLE; drawCustomCalendar(globalTextColor, globalThemeColor) }
                 2 -> { weatherLayout.visibility = View.VISIBLE; weatherUpdateRunnable.run() }
                 3 -> {
                     musicLayout.visibility = View.VISIBLE
@@ -483,16 +409,45 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         updateClockTime()
     }
 
+    private fun applyTextShadow(isEnabled: Boolean) {
+        val radius = if (isEnabled) 12f else 0f
+        val dx = if (isEnabled) 4f else 0f
+        val dy = if (isEnabled) 4f else 0f
+        val color = Color.parseColor("#80000000")
+
+        fun setShadow(tv: TextView) { tv.setShadowLayer(radius, dx, dy, color) }
+
+        setShadow(textDateSmall)
+        setShadow(textDateLarge)
+        setShadow(batteryStatusText)
+        setShadow(tvSeparator)
+        setShadow(tvMiniWeather)
+        setShadow(tvLocation)
+        setShadow(tvWeatherTemp)
+        setShadow(tvWeatherCondition)
+        setShadow(tvWeatherIcon)
+        setShadow(tvNextAlarmTime)
+        setShadow(tvTrackTitle)
+        setShadow(tvTrackArtist)
+        setShadow(tvEvent)
+        setShadow(tvMonthName)
+
+        val switchers = listOf(tsHour1, tsHour2, tsMinute1, tsMinute2)
+        for (ts in switchers) {
+            for (i in 0 until ts.childCount) {
+                val child = ts.getChildAt(i)
+                if (child is TextView) setShadow(child)
+            }
+        }
+    }
+
     override fun onPause() {
         super.onPause()
         try { unregisterReceiver(timeTickReceiver) } catch (e: Exception) {}
-
         sensorManager.unregisterListener(this)
         handler.removeCallbacks(weatherUpdateRunnable)
         handler.removeCallbacks(musicProgressRunnable)
-
         MusicService.updateUI = null
-
         brightnessAnimator?.cancel()
     }
 
@@ -508,29 +463,19 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
 
     private fun updateMusicUI(controller: MediaController?) {
         if (controller == null) {
-            tvTrackTitle.text = "Play Music"
-            tvTrackArtist.text = "Waiting..."
-            seekBarMusic.progress = 0
-            seekBarMusic.max = 100
+            tvTrackTitle.text = "Play Music"; tvTrackArtist.text = "Waiting..."
+            seekBarMusic.progress = 0; seekBarMusic.max = 100
             ivAlbumArt.setImageResource(R.drawable.ic_music_note)
             return
         }
-
         val metadata = controller.metadata
         val playbackState = controller.playbackState
         val title = metadata?.getString(MediaMetadata.METADATA_KEY_TITLE) ?: "Track"
         val artist = metadata?.getString(MediaMetadata.METADATA_KEY_ARTIST) ?: "Artist"
         val bitmap = metadata?.getBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART) ?: metadata?.getBitmap(MediaMetadata.METADATA_KEY_ART)
-
         tvTrackTitle.text = title
         tvTrackArtist.text = artist
-
-        if (bitmap != null) {
-            ivAlbumArt.setImageBitmap(bitmap)
-        } else {
-            try { ivAlbumArt.setImageResource(R.drawable.ic_music_note) } catch (e: Exception) {}
-        }
-
+        if (bitmap != null) ivAlbumArt.setImageBitmap(bitmap) else try { ivAlbumArt.setImageResource(R.drawable.ic_music_note) } catch (e: Exception) {}
         if (playbackState?.state == PlaybackState.STATE_PLAYING) {
             btnPlayPause.setImageResource(android.R.drawable.ic_media_pause)
             handler.removeCallbacks(musicProgressRunnable)
@@ -539,7 +484,6 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
             btnPlayPause.setImageResource(android.R.drawable.ic_media_play)
             handler.removeCallbacks(musicProgressRunnable)
         }
-
         val duration = metadata?.getLong(MediaMetadata.METADATA_KEY_DURATION) ?: 0L
         if (duration > 0) seekBarMusic.max = duration.toInt()
         updateMusicProgress()
@@ -569,7 +513,6 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
     private fun updateLayoutConstraints(isSplit: Boolean) {
         val constraintSet = ConstraintSet()
         constraintSet.clone(rootLayout)
-
         if (isSplit) {
             constraintSet.connect(R.id.viewBgLeft, ConstraintSet.END, R.id.guidelineVertical, ConstraintSet.START)
             constraintSet.connect(R.id.clockContainer, ConstraintSet.END, R.id.guidelineVertical, ConstraintSet.START)
@@ -586,8 +529,7 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         val timeString = sdf.format(Date())
         val parts = timeString.split(":")
         if (parts.size == 2) {
-            val hours = parts[0]
-            val minutes = parts[1]
+            val hours = parts[0]; val minutes = parts[1]
             if (hours.length == 2) { setSwitcherText(tsHour1, hours[0].toString()); setSwitcherText(tsHour2, hours[1].toString()) } else { setSwitcherText(tsHour1, "0"); setSwitcherText(tsHour2, hours) }
             if (minutes.length == 2) { setSwitcherText(tsMinute1, minutes[0].toString()); setSwitcherText(tsMinute2, minutes[1].toString()) }
         }
@@ -600,24 +542,27 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
             if (dateStr.isNotEmpty()) { dateStr = dateStr.substring(0, 1).uppercase(Locale.getDefault()) + dateStr.substring(1) }
             textDateLarge.text = dateStr
         }
-
-        if (calendarLayout.visibility == View.VISIBLE) {
-            drawCustomCalendar(globalTextColor, globalThemeColor)
-        }
+        if (calendarLayout.visibility == View.VISIBLE) drawCustomCalendar(globalTextColor, globalThemeColor)
     }
 
     private fun drawCustomCalendar(textColor: Int, themeColor: Int) {
         val calendar = Calendar.getInstance()
         val currentDay = calendar.get(Calendar.DAY_OF_MONTH)
-        // val currentMonth = calendar.get(Calendar.MONTH)
-        // val currentYear = calendar.get(Calendar.YEAR)
 
         val monthFormat = SimpleDateFormat("LLLL yyyy", Locale.getDefault())
         val monthStr = monthFormat.format(calendar.time)
         tvMonthName.text = monthStr.substring(0, 1).uppercase() + monthStr.substring(1)
         tvMonthName.setTextColor(textColor)
-        // Применяем шрифт к названию месяца
         if (currentTypeface != null) tvMonthName.typeface = currentTypeface
+
+        // ТЕНЬ
+        val prefs = getSharedPreferences("AppConfig", Context.MODE_PRIVATE)
+        val showShadow = prefs.getBoolean("SHOW_TEXT_SHADOW", true)
+        val radius = if (showShadow) 8f else 0f
+        val dx = if (showShadow) 2f else 0f
+        val dy = if (showShadow) 2f else 0f
+        val shadowColor = Color.parseColor("#80000000")
+        tvMonthName.setShadowLayer(if(showShadow) 12f else 0f, if(showShadow) 4f else 0f, if(showShadow) 4f else 0f, shadowColor)
 
         calendarHeader.removeAllViews()
         val weekDays = arrayOf("Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс")
@@ -629,16 +574,13 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
             tv.gravity = Gravity.CENTER
             tv.setTextColor(Color.argb(150, Color.red(textColor), Color.green(textColor), Color.blue(textColor)))
             tv.textSize = 14f
-
-            // Применяем шрифт к дням недели
             if (currentTypeface != null) tv.typeface = currentTypeface
-
+            tv.setShadowLayer(radius, dx, dy, shadowColor)
             tv.layoutParams = LinearLayout.LayoutParams(cellSize, ViewGroup.LayoutParams.WRAP_CONTENT)
             calendarHeader.addView(tv)
         }
 
         calendarGrid.removeAllViews()
-
         calendar.set(Calendar.DAY_OF_MONTH, 1)
         val daysInMonth = calendar.getActualMaximum(Calendar.DAY_OF_MONTH)
         var dayOfWeek = calendar.get(Calendar.DAY_OF_WEEK) - 1
@@ -647,10 +589,7 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
 
         for (i in 0 until emptyCells) {
             val emptyView = View(this)
-            emptyView.layoutParams = GridLayout.LayoutParams().apply {
-                width = cellSize
-                height = cellSize
-            }
+            emptyView.layoutParams = GridLayout.LayoutParams().apply { width = cellSize; height = cellSize }
             calendarGrid.addView(emptyView)
         }
 
@@ -659,15 +598,9 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
             tvDay.text = i.toString()
             tvDay.gravity = Gravity.CENTER
             tvDay.textSize = 16f
-            tvDay.layoutParams = GridLayout.LayoutParams().apply {
-                width = cellSize
-                height = cellSize
-            }
-
-            // Применяем шрифт к числам
-            if (currentTypeface != null) {
-                tvDay.typeface = currentTypeface
-            }
+            tvDay.layoutParams = GridLayout.LayoutParams().apply { width = cellSize; height = cellSize }
+            if (currentTypeface != null) tvDay.typeface = currentTypeface
+            tvDay.setShadowLayer(radius, dx, dy, shadowColor)
 
             if (i == currentDay) {
                 val circle = GradientDrawable()
@@ -675,13 +608,11 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
                 circle.setColor(themeColor)
                 tvDay.background = circle
                 tvDay.setTextColor(Color.WHITE)
-                // Если шрифт не задан, делаем жирным, иначе оставляем кастомный
                 if (currentTypeface == null) tvDay.typeface = Typeface.DEFAULT_BOLD
             } else {
                 tvDay.setTextColor(textColor)
                 tvDay.background = null
             }
-
             calendarGrid.addView(tvDay)
         }
     }
@@ -689,17 +620,10 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
     private fun dpToPx(dp: Int): Int = (dp * resources.displayMetrics.density).toInt()
 
     private fun updateNextAlarm() {
-        // Сначала проверяем, включена ли опция в настройках
         val prefs = getSharedPreferences("AppConfig", Context.MODE_PRIVATE)
         val showAlarm = prefs.getBoolean("SHOW_NEXT_ALARM", false)
+        if (!showAlarm) { alarmContainer.visibility = View.GONE; return }
 
-        // Если выключена — скрываем и выходим
-        if (!showAlarm) {
-            alarmContainer.visibility = View.GONE
-            return
-        }
-
-        // Стандартная логика получения будильника
         val alarmManager = getSystemService(Context.ALARM_SERVICE) as AlarmManager
         val info = alarmManager.nextAlarmClock
         if (info != null) {
@@ -712,6 +636,7 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
             alarmContainer.visibility = View.GONE
         }
     }
+
     private fun checkCalendarPermission() { if (ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_CALENDAR) != PackageManager.PERMISSION_GRANTED) { ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.READ_CALENDAR), 200) } else { readCalendarEvent() } }
     private fun readCalendarEvent() {
         CoroutineScope(Dispatchers.IO).launch {
@@ -731,53 +656,34 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
                     val timeStr = sdf.format(Date(time))
                     withContext(Dispatchers.Main) { tvEvent.text = "$timeStr $title"; tvEvent.visibility = View.VISIBLE }
                     cursor.close()
-                } else {
-                    withContext(Dispatchers.Main) { tvEvent.text = "No events"; tvEvent.visibility = View.VISIBLE }
-                }
+                } else { withContext(Dispatchers.Main) { tvEvent.text = "No events"; tvEvent.visibility = View.VISIBLE } }
             } catch (e: Exception) { e.printStackTrace() }
         }
     }
     private fun fetchWeather() {
         val prefs = getSharedPreferences("AppConfig", Context.MODE_PRIVATE)
         val apiKey = prefs.getString("YANDEX_API_KEY", "")
-
-        if (apiKey.isNullOrEmpty()) {
-            CoroutineScope(Dispatchers.Main).launch {
-                tvWeatherCondition.text = "Enter Key"
-                tvWeatherTemp.text = "--"
-                tvWeatherIcon.text = ""
-                tvLocation.text = ""
-            }
-            return
-        }
-
+        if (apiKey.isNullOrEmpty()) { CoroutineScope(Dispatchers.Main).launch { tvWeatherCondition.text = "Enter Key"; tvWeatherTemp.text = "--"; tvWeatherIcon.text = ""; tvLocation.text = "" }; return }
         CoroutineScope(Dispatchers.IO).launch {
             var cityName = getCityName(lat.toDouble(), lon.toDouble())
-
             try {
-                val urlString = "https://api.weather.yandex.ru/v2/forecast?lat=$lat&lon=$lon&lang=ru_RU"
-                val url = URL(urlString)
+                val url = URL("https://api.weather.yandex.ru/v2/forecast?lat=$lat&lon=$lon&lang=ru_RU")
                 val connection = url.openConnection() as HttpURLConnection
                 connection.setRequestProperty("X-Yandex-Weather-Key", apiKey)
-
                 if (connection.responseCode == 200) {
                     val data = connection.inputStream.bufferedReader().readText()
                     val json = JSONObject(data)
                     val fact = json.getJSONObject("fact")
                     val temp = fact.getInt("temp")
                     val condition = fact.getString("condition")
-
                     if (cityName == "Location") {
                         val geoObject = json.optJSONObject("geo_object")
                         val locality = geoObject?.optJSONObject("locality")?.optString("name")
                         val district = geoObject?.optJSONObject("district")?.optString("name")
-                        if (!locality.isNullOrEmpty()) cityName = locality
-                        else if (!district.isNullOrEmpty()) cityName = district
+                        if (!locality.isNullOrEmpty()) cityName = locality else if (!district.isNullOrEmpty()) cityName = district
                     }
-
                     val conditionRu = translateCondition(condition)
                     val icon = getWeatherIcon(condition)
-
                     withContext(Dispatchers.Main) {
                         tvWeatherTemp.text = "${if(temp > 0) "+" else ""}$temp°"
                         tvWeatherCondition.text = conditionRu
@@ -785,71 +691,19 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
                         tvLocation.text = "$cityName ➤"
                         tvMiniWeather.text = "$icon ${if(temp > 0) "+" else ""}$temp° $conditionRu"
                     }
-                } else {
-                    withContext(Dispatchers.Main) {
-                        if (connection.responseCode == 403) tvWeatherCondition.text = "Invalid Key"
-                        else tvWeatherCondition.text = "Err: ${connection.responseCode}"
-                    }
-                }
-            } catch (e: Exception) {
-                withContext(Dispatchers.Main) { tvWeatherCondition.text = "No Net" }
-            }
+                } else { withContext(Dispatchers.Main) { if (connection.responseCode == 403) tvWeatherCondition.text = "Invalid Key" else tvWeatherCondition.text = "Err: ${connection.responseCode}" } }
+            } catch (e: Exception) { withContext(Dispatchers.Main) { tvWeatherCondition.text = "No Net" } }
         }
     }
     private fun getCityName(latitude: Double, longitude: Double): String {
         return try {
             val geocoder = Geocoder(this, Locale.getDefault())
             val addresses = geocoder.getFromLocation(latitude, longitude, 1)
-            if (!addresses.isNullOrEmpty()) {
-                val address = addresses[0]
-                address.locality ?: address.subAdminArea ?: address.adminArea ?: "Location"
-            } else {
-                "Location"
-            }
-        } catch (e: Exception) {
-            "Location"
-        }
+            if (!addresses.isNullOrEmpty()) { val address = addresses[0]; address.locality ?: address.subAdminArea ?: address.adminArea ?: "Location" } else "Location"
+        } catch (e: Exception) { "Location" }
     }
-    private fun getWeatherIcon(cond: String): String {
-        return when(cond) {
-            "clear" -> "☀️"
-            "partly-cloudy" -> "⛅"
-            "cloudy" -> "☁️"
-            "overcast" -> "☁️"
-            "drizzle" -> "🌦️"
-            "light-rain" -> "🌧️"
-            "rain" -> "🌧️"
-            "moderate-rain" -> "🌧️"
-            "heavy-rain" -> "⛈️"
-            "showers" -> "☔"
-            "wet-snow" -> "🌨️"
-            "light-snow" -> "🌨️"
-            "snow" -> "❄️"
-            "hail" -> "🌨️"
-            "thunderstorm" -> "⚡"
-            else -> "🌡️"
-        }
-    }
-    private fun translateCondition(cond: String): String {
-        return when(cond) {
-            "clear" -> "Ясно"
-            "partly-cloudy" -> "Малооблачно"
-            "cloudy" -> "Облачно с проясн."
-            "overcast" -> "Пасмурно"
-            "drizzle" -> "Морось"
-            "light-rain" -> "Небольшой дождь"
-            "rain" -> "Дождь"
-            "moderate-rain" -> "Дождь"
-            "heavy-rain" -> "Ливень"
-            "showers" -> "Ливень"
-            "wet-snow" -> "Мокрый снег"
-            "light-snow" -> "Снег"
-            "snow" -> "Снег"
-            "hail" -> "Град"
-            "thunderstorm" -> "Гроза"
-            else -> cond
-        }
-    }
+    private fun getWeatherIcon(cond: String): String { return when(cond) { "clear" -> "☀️"; "partly-cloudy" -> "⛅"; "cloudy" -> "☁️"; "overcast" -> "☁️"; "drizzle" -> "🌦️"; "light-rain" -> "🌧️"; "rain" -> "🌧️"; "moderate-rain" -> "🌧️"; "heavy-rain" -> "⛈️"; "showers" -> "☔"; "wet-snow" -> "🌨️"; "light-snow" -> "🌨️"; "snow" -> "❄️"; "hail" -> "🌨️"; "thunderstorm" -> "⚡"; else -> "🌡️" } }
+    private fun translateCondition(cond: String): String { return when(cond) { "clear" -> "Ясно"; "partly-cloudy" -> "Малооблачно"; "cloudy" -> "Облачно с проясн."; "overcast" -> "Пасмурно"; "drizzle" -> "Морось"; "light-rain" -> "Небольшой дождь"; "rain" -> "Дождь"; "moderate-rain" -> "Дождь"; "heavy-rain" -> "Ливень"; "showers" -> "Ливень"; "wet-snow" -> "Мокрый снег"; "light-snow" -> "Снег"; "snow" -> "Снег"; "hail" -> "Град"; "thunderstorm" -> "Гроза"; else -> cond } }
 
     private fun applyAppearance(prefs: android.content.SharedPreferences) {
         val textColorId = prefs.getInt("TEXT_COLOR_ID", 0)
@@ -857,7 +711,6 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         val textColor = prefs.getInt("TEXT_COLOR_VALUE_$textColorId", defaultTextColors.getOrElse(textColorId) { Color.WHITE })
         globalTextColor = textColor
 
-        // Сброс цветов текста
         setClockColor(textColor)
         textDateSmall.setTextColor(textColor)
         textDateLarge.setTextColor(textColor)
@@ -866,7 +719,7 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         tvWeatherCondition.setTextColor(textColor)
         tvWeatherIcon.setTextColor(textColor)
         tvTrackTitle.setTextColor(textColor)
-        tvTrackArtist.setTextColor(Color.LTGRAY) // Возвращаем серый для артиста
+        tvTrackArtist.setTextColor(Color.LTGRAY)
         tvEvent.setTextColor(textColor)
         tvLocation.setTextColor(textColor)
         btnPrev.setColorFilter(textColor)
@@ -875,11 +728,14 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         tvNextAlarmTime.setTextColor(textColor)
         ivAlarmIcon.setColorFilter(textColor)
 
-        // === НОВОЕ: Сброс стилей плеера ===
-        seekBarMusic.thumb.setTintList(null) // Сброс тинта
-        seekBarMusic.progressDrawable.setTintList(null) // Сброс тинта
-        ivAlbumArt.clearColorFilter() // Убираем красный фильтр с обложки
-        // ===================================
+        // Сброс фильтров
+        seekBarMusic.thumb.setTintList(null)
+        seekBarMusic.progressDrawable.setTintList(null)
+        ivAlbumArt.clearColorFilter()
+
+        // Тень
+        val showShadow = prefs.getBoolean("SHOW_TEXT_SHADOW", true)
+        applyTextShadow(showShadow)
 
         val themeColorId = prefs.getInt("THEME_COLOR_ID", 0)
         val defaultThemeColors = intArrayOf(Color.parseColor("#448AFF"), Color.parseColor("#FF5252"), Color.parseColor("#69F0AE"), Color.parseColor("#FFFF00"), Color.parseColor("#E040FB"))
@@ -888,7 +744,6 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
 
         drawCustomCalendar(textColor, themeColor)
 
-        // Логика восстановления фона (оставляем как было)
         val bgImageUriStr = prefs.getString("BG_IMAGE_URI", null)
         val bgAlpha = prefs.getInt("BG_IMAGE_ALPHA", 255)
         val showPanels = prefs.getBoolean("SHOW_PANELS", false)
@@ -897,51 +752,24 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         if (bgImageUriStr != null) {
             try {
                 val uri = Uri.parse(bgImageUriStr)
-                ivBackground.visibility = View.VISIBLE // Возвращаем видимость
+                ivBackground.visibility = View.VISIBLE
                 ivBackground.setImageURI(uri)
-
-                if (isBgFill) {
-                    ivBackground.scaleType = ImageView.ScaleType.CENTER_CROP
-                } else {
-                    ivBackground.scaleType = ImageView.ScaleType.FIT_CENTER
-                }
-
-                if (showPanels) {
-                    ivBackground.imageAlpha = 255
-                } else {
-                    ivBackground.imageAlpha = bgAlpha
-                }
-
-                // Восстанавливаем Blur Views
-                ivBlurLeft.visibility = if (showPanels) View.VISIBLE else View.GONE
-                ivBlurRight.visibility = if (showPanels) View.VISIBLE else View.GONE
-
-                ivBlurLeft.setImageURI(uri)
-                ivBlurLeft.imageAlpha = bgAlpha
+                if (isBgFill) ivBackground.scaleType = ImageView.ScaleType.CENTER_CROP else ivBackground.scaleType = ImageView.ScaleType.FIT_CENTER
+                if (showPanels) ivBackground.imageAlpha = 255 else ivBackground.imageAlpha = bgAlpha
+                ivBlurLeft.setImageURI(uri); ivBlurLeft.imageAlpha = bgAlpha
                 alignBackgrounds(uri, isBgFill)
-                ivBlurRight.setImageURI(uri)
-                ivBlurRight.imageAlpha = bgAlpha
-
+                ivBlurRight.setImageURI(uri); ivBlurRight.imageAlpha = bgAlpha
                 rootLayout.setBackgroundColor(Color.BLACK)
-            } catch (e: Exception) {
-                hideBackgroundImages()
-                applyBackgroundColor(prefs)
-            }
-        } else {
-            hideBackgroundImages()
-            applyBackgroundColor(prefs)
-        }
+            } catch (e: Exception) { hideBackgroundImages(); applyBackgroundColor(prefs) }
+        } else { hideBackgroundImages(); applyBackgroundColor(prefs) }
 
-        // Восстановление панелей
         val panelColorId = prefs.getInt("PANEL_COLOR_ID", 0)
         val defaultPanelColors = intArrayOf(Color.WHITE, Color.parseColor("#444444"), Color.parseColor("#B71C1C"), Color.parseColor("#E65100"), Color.parseColor("#1B5E20"))
         val defaultPanelColor = defaultPanelColors.getOrElse(panelColorId) { Color.WHITE }
         val panelBaseColor = prefs.getInt("PANEL_COLOR_VALUE_$panelColorId", defaultPanelColor)
-
         val alphaPercent = prefs.getInt("PANEL_ALPHA", 30)
         val alpha255 = (alphaPercent * 255) / 100
         val blurRadius = prefs.getInt("PANEL_BLUR_RADIUS", 0)
-
         applyPanelStyle(panelBaseColor, alpha255, blurRadius)
     }
 
@@ -951,75 +779,36 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
                 val inputStream = contentResolver.openInputStream(uri)
                 val bitmap = BitmapFactory.decodeStream(inputStream)
                 inputStream?.close()
-
                 if (bitmap != null) {
                     val screenWidth = rootLayout.width.toFloat()
                     val screenHeight = rootLayout.height.toFloat()
                     val bitmapWidth = bitmap.width.toFloat()
                     val bitmapHeight = bitmap.height.toFloat()
-
                     val scale: Float
-                    var dx = 0f
-                    var dy = 0f
-
+                    var dx = 0f; var dy = 0f
                     if (isFill) {
-                        if (bitmapWidth * screenHeight > screenWidth * bitmapHeight) {
-                            scale = screenHeight / bitmapHeight
-                            dx = (screenWidth - bitmapWidth * scale) * 0.5f
-                        } else {
-                            scale = screenWidth / bitmapWidth
-                            dy = (screenHeight - bitmapHeight * scale) * 0.5f
-                        }
+                        if (bitmapWidth * screenHeight > screenWidth * bitmapHeight) { scale = screenHeight / bitmapHeight; dx = (screenWidth - bitmapWidth * scale) * 0.5f } else { scale = screenWidth / bitmapWidth; dy = (screenHeight - bitmapHeight * scale) * 0.5f }
                     } else {
                         scale = min(screenWidth / bitmapWidth, screenHeight / bitmapHeight)
-                        dx = (screenWidth - bitmapWidth * scale) * 0.5f
-                        dy = (screenHeight - bitmapHeight * scale) * 0.5f
+                        dx = (screenWidth - bitmapWidth * scale) * 0.5f; dy = (screenHeight - bitmapHeight * scale) * 0.5f
                     }
-
-                    val matrixLeft = Matrix()
-                    matrixLeft.setScale(scale, scale)
-                    matrixLeft.postTranslate(dx, dy)
-                    matrixLeft.postTranslate(-ivBlurLeft.left.toFloat(), -ivBlurLeft.top.toFloat())
-                    ivBlurLeft.imageMatrix = matrixLeft
-                    ivBlurLeft.setImageBitmap(bitmap)
-
-                    val matrixRight = Matrix()
-                    matrixRight.setScale(scale, scale)
-                    matrixRight.postTranslate(dx, dy)
-                    matrixRight.postTranslate(-ivBlurRight.left.toFloat(), -ivBlurRight.top.toFloat())
-                    ivBlurRight.imageMatrix = matrixRight
-                    ivBlurRight.setImageBitmap(bitmap)
+                    val matrixLeft = Matrix(); matrixLeft.setScale(scale, scale); matrixLeft.postTranslate(dx, dy); matrixLeft.postTranslate(-ivBlurLeft.left.toFloat(), -ivBlurLeft.top.toFloat())
+                    ivBlurLeft.imageMatrix = matrixLeft; ivBlurLeft.setImageBitmap(bitmap)
+                    val matrixRight = Matrix(); matrixRight.setScale(scale, scale); matrixRight.postTranslate(dx, dy); matrixRight.postTranslate(-ivBlurRight.left.toFloat(), -ivBlurRight.top.toFloat())
+                    ivBlurRight.imageMatrix = matrixRight; ivBlurRight.setImageBitmap(bitmap)
                 }
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
+            } catch (e: Exception) { e.printStackTrace() }
         }
     }
 
-    private fun hideBackgroundImages() {
-        ivBackground.visibility = View.GONE
-        ivBlurLeft.setImageDrawable(null)
-        ivBlurRight.setImageDrawable(null)
-    }
-
+    private fun hideBackgroundImages() { ivBackground.visibility = View.GONE; ivBlurLeft.setImageDrawable(null); ivBlurRight.setImageDrawable(null) }
     private fun applyPanelStyle(color: Int, alpha: Int, blurRadius: Int) {
         val finalColor = Color.argb(alpha, Color.red(color), Color.green(color), Color.blue(color))
-
-        val bgLeft = viewBgLeft.background.mutate() as? GradientDrawable
-        bgLeft?.setColor(finalColor)
-
-        val bgRight = viewBgRight.background.mutate() as? GradientDrawable
-        bgRight?.setColor(finalColor)
-
+        (viewBgLeft.background.mutate() as? GradientDrawable)?.setColor(finalColor)
+        (viewBgRight.background.mutate() as? GradientDrawable)?.setColor(finalColor)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            val effect = if (blurRadius > 0) {
-                val r = (blurRadius / 2.0f).coerceAtLeast(0.1f)
-                RenderEffect.createBlurEffect(r, r, Shader.TileMode.MIRROR)
-            } else {
-                null
-            }
-            ivBlurLeft.setRenderEffect(effect)
-            ivBlurRight.setRenderEffect(effect)
+            val effect = if (blurRadius > 0) { val r = (blurRadius / 2.0f).coerceAtLeast(0.1f); RenderEffect.createBlurEffect(r, r, Shader.TileMode.MIRROR) } else null
+            ivBlurLeft.setRenderEffect(effect); ivBlurRight.setRenderEffect(effect)
         }
     }
 
@@ -1033,86 +822,51 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
                     val fd: FileDescriptor = pfd.fileDescriptor
                     val typeface = Typeface.Builder(fd).build()
                     pfd.close()
-
-                    // Сохраняем текущий шрифт
                     currentTypeface = typeface
-
                     setClockTypeface(typeface)
-                    textDateSmall.typeface = typeface
-                    textDateLarge.typeface = typeface
-                    tvWeatherTemp.typeface = typeface
-                    tvWeatherCondition.typeface = typeface
-                    tvWeatherIcon.typeface = typeface
+                    textDateSmall.typeface = typeface; textDateLarge.typeface = typeface
+                    tvWeatherTemp.typeface = typeface; tvWeatherCondition.typeface = typeface; tvWeatherIcon.typeface = typeface
                     batteryStatusText.typeface = typeface
-                    tvTrackTitle.typeface = typeface
-                    tvTrackArtist.typeface = typeface
-                    tvEvent.typeface = typeface
-                    tvLocation.typeface = typeface
-                    tvNextAlarmTime.typeface = typeface
-                    tvMiniWeather.typeface = typeface
-
-                    // Применяем к заголовку месяца
+                    tvTrackTitle.typeface = typeface; tvTrackArtist.typeface = typeface
+                    tvEvent.typeface = typeface; tvLocation.typeface = typeface; tvNextAlarmTime.typeface = typeface; tvMiniWeather.typeface = typeface
                     tvMonthName.typeface = typeface
-
-                    // Перерисовываем календарь, если он виден, чтобы применить шрифт к ячейкам
-                    if (calendarLayout.visibility == View.VISIBLE) {
-                        drawCustomCalendar(globalTextColor, globalThemeColor)
-                    }
+                    if (calendarLayout.visibility == View.VISIBLE) drawCustomCalendar(globalTextColor, globalThemeColor)
                 }
-            } catch (e: Exception) {
-                resetFonts()
-            }
-        } else {
-            resetFonts()
-        }
+            } catch (e: Exception) { resetFonts() }
+        } else { resetFonts() }
     }
 
     private fun resetFonts() {
-        // Сбрасываем сохраненный шрифт
         currentTypeface = null
-
         val defaultTypeface = Typeface.DEFAULT
         val clockTypeface = Typeface.create("sans-serif-thin", Typeface.NORMAL)
         setClockTypeface(clockTypeface)
-        textDateSmall.typeface = defaultTypeface
-        textDateLarge.typeface = Typeface.create("sans-serif-light", Typeface.NORMAL)
-        tvWeatherTemp.typeface = clockTypeface
-        tvWeatherCondition.typeface = defaultTypeface
-        tvWeatherIcon.typeface = defaultTypeface
-        batteryStatusText.typeface = defaultTypeface
-        tvTrackTitle.typeface = defaultTypeface
-        tvTrackArtist.typeface = defaultTypeface
-        tvEvent.typeface = defaultTypeface
-        tvLocation.typeface = defaultTypeface
-        tvNextAlarmTime.typeface = defaultTypeface
-        tvMiniWeather.typeface = defaultTypeface
-
-        // Сбрасываем шрифт заголовка месяца
+        textDateSmall.typeface = defaultTypeface; textDateLarge.typeface = Typeface.create("sans-serif-light", Typeface.NORMAL)
         tvMonthName.typeface = Typeface.DEFAULT_BOLD
-
-        // Перерисовываем календарь
-        if (calendarLayout.visibility == View.VISIBLE) {
-            drawCustomCalendar(globalTextColor, globalThemeColor)
-        }
+        tvWeatherTemp.typeface = clockTypeface; tvWeatherCondition.typeface = defaultTypeface; tvWeatherIcon.typeface = defaultTypeface
+        batteryStatusText.typeface = defaultTypeface
+        tvTrackTitle.typeface = defaultTypeface; tvTrackArtist.typeface = defaultTypeface
+        tvEvent.typeface = defaultTypeface; tvLocation.typeface = defaultTypeface; tvNextAlarmTime.typeface = defaultTypeface; tvMiniWeather.typeface = defaultTypeface
+        if (calendarLayout.visibility == View.VISIBLE) drawCustomCalendar(globalTextColor, globalThemeColor)
     }
+
     private fun updateBatteryColor() {
         if (!isNightModeActive || !isNightFilterEnabled) {
             batteryStatusText.setTextColor(Color.GREEN)
         } else {
-            // Используем сохраненный цвет
             val prefs = getSharedPreferences("AppConfig", Context.MODE_PRIVATE)
             val nightColor = prefs.getInt("NIGHT_FILTER_COLOR", Color.parseColor("#9EA793"))
             batteryStatusText.setTextColor(nightColor)
         }
     }
-    private fun setSwitcherText(switcher: TextSwitcher, text: String) { val current = (switcher.currentView as? TextView)?.text?.toString() ?: ""; if (current != text) { if (text.isEmpty()) { val tv = switcher.nextView as TextView; tv.text = ""; switcher.showNext() } else { switcher.setText(text) } } }
+
+    private fun setSwitcherText(switcher: TextSwitcher, text: String) { val current = (switcher.currentView as? TextView)?.text?.toString() ?: ""; if (current != text) { if (text.isEmpty()) { (switcher.nextView as TextView).text = ""; switcher.showNext() } else { switcher.setText(text) } } }
     private fun setClockSize(sizeSp: Float) { val switchers = listOf(tsHour1, tsHour2, tsMinute1, tsMinute2); for (ts in switchers) { for (i in 0 until ts.childCount) { (ts.getChildAt(i) as TextView).setTextSize(TypedValue.COMPLEX_UNIT_SP, sizeSp) } }; tvSeparator.setTextSize(TypedValue.COMPLEX_UNIT_SP, sizeSp) }
     private fun setClockColor(color: Int) { val switchers = listOf(tsHour1, tsHour2, tsMinute1, tsMinute2); for (ts in switchers) { for (i in 0 until ts.childCount) { (ts.getChildAt(i) as TextView).setTextColor(color) } }; tvSeparator.setTextColor(color) }
     private fun setClockTypeface(tf: Typeface) { val switchers = listOf(tsHour1, tsHour2, tsMinute1, tsMinute2); for (ts in switchers) { for (i in 0 until ts.childCount) { (ts.getChildAt(i) as TextView).typeface = tf; (ts.getChildAt(i) as TextView).fontFeatureSettings = "tnum" } }; tvSeparator.typeface = tf }
     private fun applyBackgroundColor(prefs: android.content.SharedPreferences) { val bgColorId = prefs.getInt("BG_COLOR_ID", 0); val defaultBgColors = intArrayOf(Color.parseColor("#333333"), Color.parseColor("#888888"), Color.parseColor("#0D47A1"), Color.parseColor("#B71C1C"), Color.parseColor("#1B5E20")); val defaultColor = defaultBgColors.getOrElse(bgColorId) { Color.DKGRAY }; val bgColor = prefs.getInt("BG_COLOR_VALUE_$bgColorId", defaultColor); rootLayout.setBackgroundColor(bgColor) }
     private fun getThemeResId(id: Int): Int { return when(id) { 1 -> R.style.Theme_ChargingClock_Red; 2 -> R.style.Theme_ChargingClock_Green; 3 -> R.style.Theme_ChargingClock_Yellow; 4 -> R.style.Theme_ChargingClock_Purple; else -> R.style.Theme_ChargingClock_Blue } }
 
-    // --- SENSOR EVENT LISTENER ---
     override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {}
 
     override fun onSensorChanged(event: SensorEvent?) {
@@ -1125,20 +879,13 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
                     val nightLevel = prefs.getInt("NIGHT_BRIGHTNESS_LEVEL", 25)
                     val targetBrightness = if (nightLevel < 1) 0.01f else nightLevel / 100f
                     animateScreenBrightness(targetBrightness)
-
-                    // ВМЕСТО applyRedText()
                     if (isNightFilterEnabled) applyNightText()
                 }
             } else {
                 if (isNightModeActive) {
                     isNightModeActive = false
-                    // Возвращаем системную яркость
                     val systemBrightness = getSystemBrightness()
-                    animateScreenBrightness(systemBrightness) {
-                        val params = window.attributes
-                        params.screenBrightness = WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
-                        window.attributes = params
-                    }
+                    animateScreenBrightness(systemBrightness) { val params = window.attributes; params.screenBrightness = WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE; window.attributes = params }
                     val prefs = getSharedPreferences("AppConfig", Context.MODE_PRIVATE)
                     applyAppearance(prefs)
                 }
@@ -1146,7 +893,33 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         }
     }
 
-    // --- ОТСУТСТВОВАВШИЕ МЕТОДЫ ---
+    private fun applyNightText() {
+        val prefs = getSharedPreferences("AppConfig", Context.MODE_PRIVATE)
+        val color = prefs.getInt("NIGHT_FILTER_COLOR", Color.parseColor("#9EA793"))
+
+        ivBackground.visibility = View.GONE
+        ivBlurLeft.visibility = View.GONE
+        ivBlurRight.visibility = View.GONE
+        rootLayout.setBackgroundColor(Color.BLACK)
+
+        setClockColor(color)
+        textDateSmall.setTextColor(color); textDateLarge.setTextColor(color); tvMiniWeather.setTextColor(color)
+        tvWeatherTemp.setTextColor(color); tvWeatherCondition.setTextColor(color); tvWeatherIcon.setTextColor(color)
+        tvTrackTitle.setTextColor(color); tvTrackArtist.setTextColor(color)
+        tvEvent.setTextColor(color); tvLocation.setTextColor(color); tvNextAlarmTime.setTextColor(color)
+        batteryStatusText.setTextColor(color)
+        btnPrev.setColorFilter(color); btnPlayPause.setColorFilter(color); btnNext.setColorFilter(color)
+        ivAlarmIcon.setColorFilter(color)
+
+        seekBarMusic.thumb.setTint(color)
+        seekBarMusic.progressDrawable.setTint(color)
+        ivAlbumArt.colorFilter = PorterDuffColorFilter(color, PorterDuff.Mode.MULTIPLY)
+
+        globalTextColor = color
+        globalThemeColor = color
+        drawCustomCalendar(globalTextColor, globalThemeColor)
+        applyPanelStyle(color, 50, 0)
+    }
 
     private fun requestLocationUpdate() {
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) { ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.ACCESS_FINE_LOCATION), 100); return }
@@ -1161,92 +934,15 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         brightnessAnimator?.cancel()
         brightnessAnimator = ValueAnimator.ofFloat(currentBrightness, targetValue).apply {
             duration = 1000
-            addUpdateListener { animator ->
-                val value = animator.animatedValue as Float
-                val layoutParams = window.attributes
-                layoutParams.screenBrightness = value
-                window.attributes = layoutParams
-            }
-            addListener(object : AnimatorListenerAdapter() {
-                override fun onAnimationEnd(animation: Animator) { onAnimationEnd?.invoke() }
-            })
+            addUpdateListener { animator -> val value = animator.animatedValue as Float; val layoutParams = window.attributes; layoutParams.screenBrightness = value; window.attributes = layoutParams }
+            addListener(object : AnimatorListenerAdapter() { override fun onAnimationEnd(animation: Animator) { onAnimationEnd?.invoke() } })
             start()
         }
     }
 
-    private fun getSystemBrightness(): Float {
-        return try {
-            val curBrightness = Settings.System.getInt(contentResolver, Settings.System.SCREEN_BRIGHTNESS)
-            curBrightness / 255f
-        } catch (e: Exception) { 0.5f }
-    }
-
-    private fun resetBrightnessAndFilter() {
-        val layoutParams = window.attributes
-        layoutParams.screenBrightness = WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
-        window.attributes = layoutParams
-        if (isNightModeActive) {
-            isNightModeActive = false
-            val prefs = getSharedPreferences("AppConfig", Context.MODE_PRIVATE)
-            applyAppearance(prefs)
-        }
-    }
-
-    private fun applyNightText() {
-        val prefs = getSharedPreferences("AppConfig", Context.MODE_PRIVATE)
-        // Получаем цвет из настроек (по умолчанию #9EA793)
-        val color = prefs.getInt("NIGHT_FILTER_COLOR", Color.parseColor("#9EA793"))
-
-        // 1. Скрываем фоновые изображения для "True Black" эффекта
-        ivBackground.visibility = View.GONE
-        ivBlurLeft.visibility = View.GONE
-        ivBlurRight.visibility = View.GONE
-        rootLayout.setBackgroundColor(Color.BLACK)
-
-        // 2. Красим основные текстовые элементы
-        setClockColor(color)
-        textDateSmall.setTextColor(color)
-        textDateLarge.setTextColor(color)
-        tvMiniWeather.setTextColor(color)
-        tvWeatherTemp.setTextColor(color)
-        tvWeatherCondition.setTextColor(color)
-        tvWeatherIcon.setTextColor(color)
-        tvTrackTitle.setTextColor(color)
-        tvTrackArtist.setTextColor(color)
-        tvEvent.setTextColor(color)
-        tvLocation.setTextColor(color)
-        tvNextAlarmTime.setTextColor(color)
-
-        // 3. Красим иконки и кнопки
-        batteryStatusText.setTextColor(color)
-        btnPrev.setColorFilter(color)
-        btnPlayPause.setColorFilter(color)
-        btnNext.setColorFilter(color)
-        ivAlarmIcon.setColorFilter(color)
-
-        // 4. Красим элементы плеера (шкала и обложка)
-        seekBarMusic.thumb.setTint(color)
-        seekBarMusic.progressDrawable.setTint(color)
-
-        // Тонируем обложку
-        ivAlbumArt.colorFilter = PorterDuffColorFilter(color, PorterDuff.Mode.MULTIPLY)
-
-        // 5. Обновляем глобальные переменные и календарь
-        globalTextColor = color
-        globalThemeColor = color
-        drawCustomCalendar(globalTextColor, globalThemeColor)
-
-        // Панели делаем прозрачными или едва заметными с выбранным цветом
-        applyPanelStyle(color, 50, 0)
-    }
-
-    private fun updateInitialBatteryStatus() {
-        val intent: Intent? = registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
-        val status: Int = intent?.getIntExtra(BatteryManager.EXTRA_STATUS, -1) ?: -1
-        val isCharging: Boolean = status == BatteryManager.BATTERY_STATUS_CHARGING || status == BatteryManager.BATTERY_STATUS_FULL
-        if (isCharging) { batteryStatusText.text = "Заряжается"; batteryStatusText.setTextColor(Color.GREEN) } else { batteryStatusText.text = "Работа от батареи"; batteryStatusText.setTextColor(Color.RED) }
-    }
-
+    private fun getSystemBrightness(): Float { return try { val curBrightness = Settings.System.getInt(contentResolver, Settings.System.SCREEN_BRIGHTNESS); curBrightness / 255f } catch (e: Exception) { 0.5f } }
+    private fun resetBrightnessAndFilter() { val layoutParams = window.attributes; layoutParams.screenBrightness = WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE; window.attributes = layoutParams; if (isNightModeActive) { isNightModeActive = false; val prefs = getSharedPreferences("AppConfig", Context.MODE_PRIVATE); applyAppearance(prefs) } }
+    private fun updateInitialBatteryStatus() { val intent: Intent? = registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED)); val status: Int = intent?.getIntExtra(BatteryManager.EXTRA_STATUS, -1) ?: -1; val isCharging: Boolean = status == BatteryManager.BATTERY_STATUS_CHARGING || status == BatteryManager.BATTERY_STATUS_FULL; if (isCharging) { batteryStatusText.text = "Заряжается"; batteryStatusText.setTextColor(Color.GREEN) } else { batteryStatusText.text = "Работа от батареи"; batteryStatusText.setTextColor(Color.RED) } }
     override fun onDestroy() { super.onDestroy(); try { unregisterReceiver(powerReceiver) } catch (e: Exception) {} }
     private fun hideSystemUI() { window.decorView.systemUiVisibility = (View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY or View.SYSTEM_UI_FLAG_LAYOUT_STABLE or View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION or View.SYSTEM_UI_FLAG_FULLSCREEN) }
 }
