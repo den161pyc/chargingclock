@@ -142,7 +142,12 @@
         <LinearLayout android:id="@+id/weatherLayout" android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical" android:gravity="center" android:visibility="gone">
             <TextView android:id="@+id/tvLocation" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Город" android:textColor="#FFFFFF" android:textSize="24sp" android:layout_marginBottom="16dp"/>
             <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical">
-                <TextView android:id="@+id/tvWeatherIcon" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="☁️" android:textSize="64sp" android:layout_marginEnd="16dp"/>
+                <androidx.compose.ui.platform.ComposeView
+                    android:id="@+id/composeWeatherIcon"
+                    android:layout_width="128dp"
+                    android:layout_height="128dp"
+                    android:layout_marginEnd="16dp"
+                    android:visibility="gone"/>
                 <TextView android:id="@+id/tvWeatherTemp" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="+2°C" android:textColor="#FFFFFF" android:textSize="64sp" android:textStyle="bold"/>
             </LinearLayout>
             <TextView android:id="@+id/tvWeatherCondition" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Облачно" android:textColor="#DDDDDD" android:textSize="24sp" android:layout_marginTop="8dp"/>
